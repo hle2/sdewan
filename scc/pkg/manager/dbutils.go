@@ -130,7 +130,7 @@ func (d *DBUtils) UpdateObject(c ControllerObjectManager,
         return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to update the object")
     }
 
-	key, err := c.GetStoreKey(m, t, false)
+    key, err := c.GetStoreKey(m, t, false)
     if err != nil {
         return c.CreateEmptyObject(), err
     }
