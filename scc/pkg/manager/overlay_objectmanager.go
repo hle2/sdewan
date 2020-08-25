@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
 	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"
 	pkgerrors "github.com/pkg/errors"
 )
 
@@ -89,9 +90,28 @@ func (c *OverlayObjectManager) ParseObject(r io.Reader) (module.ControllerObject
 
 func (c *OverlayObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
 	// DB Operation
-    t, err := GetDBUtils().CreateObject(c, m, t)
+    err :=  GetDBUtils().checkDep(c, m)
+    if err != nil {
+        return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to create the object")
+    }
 
-	return t, err
+    // for test
+    resutil := NewResUtil()
+
+    deviceObject := module.OverlayObject{
+                Metadata: module.ObjectMetaData{"local", "", "", ""}, 
+                Specification: module.OverlayObjectSpec{"caid1"}}
+    resutil.AddResource(&deviceObject, "Create", &resource.FileResource{"mycm", "ConfigMap", "mycm.yaml"})
+
+    err = resutil.Deploy("YAML")
+
+    if err != nil {
+        return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to create the object: fail to deploy resource")
+    }
+
+    t, err = GetDBUtils().CreateObject(c, m, t)
+
+    return t, err
 }
 
 func (c *OverlayObjectManager) GetObject(m map[string]string) (module.ControllerObject, error) {

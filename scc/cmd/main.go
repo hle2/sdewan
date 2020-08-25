@@ -26,7 +26,9 @@ import (
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/auth"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/config"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
-    contextDb "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/contextdb"
+    tmpdb "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
+//    contextDb "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/contextdb"
+    contextDb "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/contextdb"
     "github.com/gorilla/handlers"
 )
 
@@ -34,6 +36,7 @@ func main() {
 
     rand.Seed(time.Now().UnixNano())
 
+    tmpdb.InitializeDatabaseConnection("scc")
     err := db.InitializeDatabaseConnection("scc")
     if err != nil {
             log.Println("Unable to initialize database connection...")

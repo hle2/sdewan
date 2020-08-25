@@ -17,10 +17,24 @@
 package resource
 
 import (
+	"io/ioutil"
 )
 
-type ISdewanResource interface {
-	GetName() string
-	GetType() string
-	ToYaml() string
+type FileResource struct {
+	Name string
+	Type string
+	FileName string
+}
+
+func (c *FileResource) GetName() string {
+	return c.Name
+}
+
+func (c *FileResource) GetType() string {
+	return c.Type
+}
+
+func (c *FileResource) ToYaml() string {
+	yamlFile, _ := ioutil.ReadFile(c.FileName)
+	return string(yamlFile)
 }

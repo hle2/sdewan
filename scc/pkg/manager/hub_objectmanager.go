@@ -94,7 +94,22 @@ func (c *HubObjectManager) ParseObject(r io.Reader) (module.ControllerObject, er
 
 func (c *HubObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
 	// DB Operation
-    t, err := GetDBUtils().CreateObject(c, m, t)
+    err :=  GetDBUtils().checkDep(c, m)
+    if err != nil {
+        return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to create the object")
+    }
+
+    resutil := NewResUtil()
+
+    // Todo: call resutil.AddResource() to add to-be-deployed resources
+
+    err = resutil.Deploy("YAML")
+
+    if err != nil {
+        return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to create the object: fail to deploy resource")
+    }
+
+    t, err = GetDBUtils().CreateObject(c, m, t)
 
     return t, err
 }
