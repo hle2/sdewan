@@ -17,6 +17,7 @@
 package manager
 
 import (
+    "log"
 	"io"
 	"encoding/json"
 	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
@@ -93,7 +94,17 @@ func (c *ProposalObjectManager) ParseObject(r io.Reader) (module.ControllerObjec
 }
 
 func (c *ProposalObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// DB Operation
+	// for certificate test
+    overlay := GetManagerset().Overlay
+    to := t.(*module.ProposalObject)
+    pname := to.Metadata.Name
+    oname := m[OverlayResource]
+    log.Println("Create Certificate: " + pname + "-cert")
+    crt, key, _:= overlay.CreateCertificate(oname, pname + "-cert")
+    log.Println("Crt: \n" + crt)
+    log.Println("Key: \n" + key)
+
+    // DB Operation
     t, err := GetDBUtils().CreateObject(c, m, t)
 
     return t, err
@@ -121,7 +132,13 @@ func (c *ProposalObjectManager) UpdateObject(m map[string]string, t module.Contr
 }
 
 func (c *ProposalObjectManager) DeleteObject(m map[string]string) error {
-	// DB Operation
+	// for certificate test
+    overlay := GetManagerset().Overlay
+    pname := m[ProposalResource]
+    log.Println("Delete Certificate: " + pname + "-cert")
+    overlay.DeleteCertificate(pname + "-cert")
+
+    // DB Operation
     err := GetDBUtils().DeleteObject(c, m)
 
     return err

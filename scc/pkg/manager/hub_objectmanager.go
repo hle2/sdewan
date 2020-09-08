@@ -94,7 +94,7 @@ func (c *HubObjectManager) ParseObject(r io.Reader) (module.ControllerObject, er
 
 func (c *HubObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
 	// DB Operation
-    err :=  GetDBUtils().checkDep(c, m)
+    err :=  GetDBUtils().CheckDep(c, m)
     if err != nil {
         return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to create the object")
     }

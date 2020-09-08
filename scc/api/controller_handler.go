@@ -59,6 +59,13 @@ func (h ControllerHandler) createHandler(w http.ResponseWriter, r *http.Request)
         return
     }
 
+    // Check resource depedency
+    err = manager.GetDBUtils().CheckDep(h.client, vars)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
     ret, err = h.client.CreateObject(vars, v)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -76,7 +83,15 @@ func (h ControllerHandler) createHandler(w http.ResponseWriter, r *http.Request)
 
 // getsHandler handle GET All operations
 func (h ControllerHandler) getsHandler(w http.ResponseWriter, r *http.Request) {
+    var err error
     vars := mux.Vars(r)
+
+    // Check resource depedency
+    err = manager.GetDBUtils().CheckDep(h.client, vars)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 
     ret, err := h.client.GetObjects(vars)
     if err != nil {
@@ -95,7 +110,15 @@ func (h ControllerHandler) getsHandler(w http.ResponseWriter, r *http.Request) {
 
 // getHandler handle GET operations on a particular name
 func (h ControllerHandler) getHandler(w http.ResponseWriter, r *http.Request) {
+    var err error
     vars := mux.Vars(r)
+
+    // Check resource depedency
+    err = manager.GetDBUtils().CheckDep(h.client, vars)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 
     ret, err := h.client.GetObject(vars)
     if err != nil {
@@ -137,6 +160,13 @@ func (h ControllerHandler) updateHandler(w http.ResponseWriter, r *http.Request)
         return
     }
 
+    // Check resource depedency
+    err = manager.GetDBUtils().CheckDep(h.client, vars)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
     ret, err = h.client.UpdateObject(vars, v)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -155,9 +185,17 @@ func (h ControllerHandler) updateHandler(w http.ResponseWriter, r *http.Request)
 
 //deleteHandler handles DELETE operations on a particular record
 func (h ControllerHandler) deleteHandler(w http.ResponseWriter, r *http.Request) {
+    var err error
     vars := mux.Vars(r)
 
-    err := h.client.DeleteObject(vars)
+    // Check resource depedency
+    err = manager.GetDBUtils().CheckDep(h.client, vars)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    err = h.client.DeleteObject(vars)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return

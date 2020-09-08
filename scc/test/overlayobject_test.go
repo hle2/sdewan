@@ -19,10 +19,10 @@ func TestMain(m *testing.M) {
 
     var object1 = module.OverlayObject{
         Metadata: module.ObjectMetaData{"overlay1", "", "", ""}, 
-        Specification: module.OverlayObjectSpec{"caid1"}}
+        Specification: module.OverlayObjectSpec{}}
     var object2 = module.OverlayObject{
         Metadata: module.ObjectMetaData{"overlay2", "", "", ""}, 
-        Specification: module.OverlayObjectSpec{"caid2"}}
+        Specification: module.OverlayObjectSpec{}}
 
     createControllerObject(BaseUrl, &object1, &module.OverlayObject{})
     createControllerObject(BaseUrl, &object2, &module.OverlayObject{})
@@ -92,15 +92,7 @@ func TestCreateObject(t *testing.T) {
             name: "EmptyName",
             obj: module.OverlayObject{
                 Metadata: module.ObjectMetaData{"", "object 1", "", ""}, 
-                Specification: module.OverlayObjectSpec{"caid1"}},
-            expectedErr: true,
-            expectedErrCode: 422,
-        },
-        {
-            name: "EmptyCaid",
-            obj: module.OverlayObject{
-                Metadata: module.ObjectMetaData{"overlay1", "", "", ""}, 
-                Specification: module.OverlayObjectSpec{""}},
+                Specification: module.OverlayObjectSpec{}},
             expectedErr: true,
             expectedErrCode: 422,
         },
@@ -125,16 +117,7 @@ func TestUpdateObject(t *testing.T) {
             object_name: "overlay1",
             obj: module.OverlayObject{
                 Metadata: module.ObjectMetaData{"", "object 1", "", ""}, 
-                Specification: module.OverlayObjectSpec{"caid1"}},
-            expectedErr: true,
-            expectedErrCode: 422,
-        },
-        {
-            name: "EmptyCaid",
-            object_name: "overlay1",
-            obj: module.OverlayObject{
-                Metadata: module.ObjectMetaData{"overlay1", "object 1", "", ""}, 
-                Specification: module.OverlayObjectSpec{""}},
+                Specification: module.OverlayObjectSpec{}},
             expectedErr: true,
             expectedErrCode: 422,
         },
@@ -143,7 +126,7 @@ func TestUpdateObject(t *testing.T) {
             object_name: "overlay2",
             obj: module.OverlayObject{
                 Metadata: module.ObjectMetaData{"overlay1", "", "", ""}, 
-                Specification: module.OverlayObjectSpec{"caid1"}},
+                Specification: module.OverlayObjectSpec{}},
             expectedErr: true,
             expectedErrCode: 500,
         },
@@ -175,15 +158,15 @@ func TestDeleteObject(t *testing.T) {
 }
 
 func TestHappyPath(t *testing.T) {
-    overlay_name := "my_overlay"
+    overlay_name := "my-overlay"
 
     obj := module.OverlayObject{
         Metadata: module.ObjectMetaData{overlay_name, "object 1", "", ""},
-        Specification: module.OverlayObjectSpec{"caid1"}}
+        Specification: module.OverlayObjectSpec{}}
 
     obj_update := module.OverlayObject{
-        Metadata: module.ObjectMetaData{overlay_name, "object 1", "", ""},
-        Specification: module.OverlayObjectSpec{"caid2"}}
+        Metadata: module.ObjectMetaData{overlay_name, "object 2", "", ""},
+        Specification: module.OverlayObjectSpec{}}
 
     ret_obj, err := createControllerObject(BaseUrl, &obj, &module.OverlayObject{})
     if err != nil {
@@ -192,7 +175,7 @@ func TestHappyPath(t *testing.T) {
         return
     }
 
-    if ret_obj.(*module.OverlayObject).Specification.Caid != "caid1" {
+    if ret_obj.(*module.OverlayObject).Metadata.Description != "object 1" {
         t.Errorf("Test Case 'Happy Path' failed: create object")
         return
     }
@@ -204,7 +187,7 @@ func TestHappyPath(t *testing.T) {
         return
     }
 
-    if ret_obj.(*module.OverlayObject).Specification.Caid != "caid2" {
+    if ret_obj.(*module.OverlayObject).Metadata.Description != "object 2" {
         t.Errorf("Test Case 'Happy Path' failed: update object")
         return
     }

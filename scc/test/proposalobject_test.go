@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 
     var overlay_object = module.OverlayObject{
         Metadata: module.ObjectMetaData{"overlay1", "", "", ""}, 
-        Specification: module.OverlayObjectSpec{"caid1"}}
+        Specification: module.OverlayObjectSpec{}}
     
     var proposal_object1 = module.ProposalObject{
         Metadata: module.ObjectMetaData{"proposal1", "", "", ""}, 
@@ -177,7 +177,7 @@ func TestDeleteObject(t *testing.T) {
 }
 
 func TestHappyPath(t *testing.T) {
-    proposal_name := "my_proposal"
+    proposal_name := "my-proposal"
 
     obj := module.ProposalObject{
         Metadata: module.ObjectMetaData{proposal_name, "object 1", "", ""},

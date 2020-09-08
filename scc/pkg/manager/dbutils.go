@@ -31,7 +31,7 @@ func GetDBUtils() *DBUtils {
 	return &dbutils
 }
 
-func (d *DBUtils) checkDep(c ControllerObjectManager, m map[string]string) error {
+func (d *DBUtils) CheckDep(c ControllerObjectManager, m map[string]string) error {
     depsResManagers := c.GetDepResManagers()
     for _, mgr := range depsResManagers {
         _, err := d.GetObject(mgr, m)
@@ -47,13 +47,8 @@ func (d *DBUtils) CreateObject(c ControllerObjectManager,
     m map[string]string, 
     t module.ControllerObject) (module.ControllerObject, error) {
 
-    err := d.checkDep(c, m)
-    if err != nil {
-        return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to create the object")
-    }
-
 	key, _ := c.GetStoreKey(m, t, false)
-	err = db.DBconn.Insert(c.GetStoreName(), key, nil, c.GetStoreMeta(), t)
+	err := db.DBconn.Insert(c.GetStoreName(), key, nil, c.GetStoreMeta(), t)
 	if err != nil {
 	    return c.CreateEmptyObject(), pkgerrors.New("Unable to create the object")
 	}
@@ -63,11 +58,6 @@ func (d *DBUtils) CreateObject(c ControllerObjectManager,
 
 func (d *DBUtils) GetObject(c ControllerObjectManager, 
     m map[string]string) (module.ControllerObject, error) {
-
-    err := d.checkDep(c, m)
-    if err != nil {
-        return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to get the object")
-    }
 
     key, err := c.GetStoreKey(m, c.CreateEmptyObject(), false)
     if err != nil {
@@ -94,11 +84,6 @@ func (d *DBUtils) GetObject(c ControllerObjectManager,
 func (d *DBUtils) GetObjects(c ControllerObjectManager,
     m map[string]string) ([]module.ControllerObject, error) {
 	
-    err := d.checkDep(c, m)
-    if err != nil {
-        return []module.ControllerObject{}, pkgerrors.Wrap(err, "Unable to get the object collection")
-    }
-
     key, err := c.GetStoreKey(m, c.CreateEmptyObject(), true)
     if err != nil {
         return []module.ControllerObject{}, err
@@ -125,11 +110,6 @@ func (d *DBUtils) GetObjects(c ControllerObjectManager,
 func (d *DBUtils) UpdateObject(c ControllerObjectManager,
     m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
 
-    err := d.checkDep(c, m)
-    if err != nil {
-        return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to update the object")
-    }
-
     key, err := c.GetStoreKey(m, t, false)
     if err != nil {
         return c.CreateEmptyObject(), err
@@ -143,12 +123,6 @@ func (d *DBUtils) UpdateObject(c ControllerObjectManager,
 }
 
 func (d *DBUtils) DeleteObject(c ControllerObjectManager, m map[string]string) error {
-    
-    err := d.checkDep(c, m)
-    if err != nil {
-        return pkgerrors.Wrap(err, "Unable to delete the object")
-    }
-
     key, err := c.GetStoreKey(m, c.CreateEmptyObject(), false)
     if err != nil {
         return err

@@ -17,12 +17,13 @@
 package manager
 
 import (
-	"io"
-	"encoding/json"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
-    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"
-	pkgerrors "github.com/pkg/errors"
+    "io"
+    "log"
+    "encoding/json"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+//    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"
+    pkgerrors "github.com/pkg/errors"
 )
 
 type OverlayObjectKey struct {
@@ -89,26 +90,34 @@ func (c *OverlayObjectManager) ParseObject(r io.Reader) (module.ControllerObject
 }
 
 func (c *OverlayObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// DB Operation
-    err :=  GetDBUtils().checkDep(c, m)
+    // for rsync test
+    // resutil := NewResUtil()
+
+    // deviceObject := module.OverlayObject{
+    //            Metadata: module.ObjectMetaData{"local", "", "", ""}, 
+    //            Specification: module.OverlayObjectSpec{"caid1"}}
+    // resutil.AddResource(&deviceObject, "Create", &resource.FileResource{"mycm", "ConfigMap", "mycm.yaml"})
+
+    // err = resutil.Deploy("YAML")
+
+    // if err != nil {
+    //     return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to create the object: fail to deploy resource")
+    // }
+
+    // Create a issuer each overlay
+    to := t.(*module.OverlayObject)
+    overlay_name := to.Metadata.Name
+    cu, err := GetCertUtil()
     if err != nil {
-        return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to create the object")
+        log.Println(err)
+    } else {
+        _, err := cu.CreateCAIssuer(c.IssuerName(overlay_name), NameSpaceName, RootCertName)
+        if err != nil {
+            log.Println("Failed to create overlay[" + overlay_name +"] issuer: " + err.Error())
+        }
     }
 
-    // for test
-    resutil := NewResUtil()
-
-    deviceObject := module.OverlayObject{
-                Metadata: module.ObjectMetaData{"local", "", "", ""}, 
-                Specification: module.OverlayObjectSpec{"caid1"}}
-    resutil.AddResource(&deviceObject, "Create", &resource.FileResource{"mycm", "ConfigMap", "mycm.yaml"})
-
-    err = resutil.Deploy("YAML")
-
-    if err != nil {
-        return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to create the object: fail to deploy resource")
-    }
-
+    // DB Operation
     t, err = GetDBUtils().CreateObject(c, m, t)
 
     return t, err
@@ -136,8 +145,53 @@ func (c *OverlayObjectManager) UpdateObject(m map[string]string, t module.Contro
 }
 
 func (c *OverlayObjectManager) DeleteObject(m map[string]string) error {
-	// DB Operation
-    err := GetDBUtils().DeleteObject(c, m)
+    overlay_name := m[OverlayResource]
+    cu, err := GetCertUtil()
+    if err != nil {
+        log.Println(err)
+    } else {
+        err := cu.DeleteIssuer(c.IssuerName(overlay_name), NameSpaceName)
+        if err != nil {
+            log.Println("Failed to delete overlay[" + overlay_name +"] issuer: " + err.Error())
+        }
+    }
+
+    // DB Operation
+    err = GetDBUtils().DeleteObject(c, m)
 
     return err
+}
+
+func (c *OverlayObjectManager) IssuerName(name string) string {
+    return name + "-issuer"
+}
+
+func (c *OverlayObjectManager) CreateCertificate(oname string, cname string) (string, string, error) {
+    cu, err := GetCertUtil()
+    if err != nil {
+        log.Println(err)
+    } else {
+        _, err := cu.CreateCertificate(cname, NameSpaceName, c.IssuerName(oname), false)
+        if err != nil {
+            log.Println("Failed to create overlay[" + oname +"] certificate: " + err.Error())
+        } else {
+            return cu.GetKeypair(cname, NameSpaceName)
+        }
+    }
+
+    return "", "", nil
+}
+
+func (c *OverlayObjectManager) DeleteCertificate(cname string) (string, string, error) {
+    cu, err := GetCertUtil()
+    if err != nil {
+        log.Println(err)
+    } else {
+        err = cu.DeleteCertificate(cname, NameSpaceName)
+        if err != nil {
+            log.Println("Failed to delete " + cname +" certificate: " + err.Error())
+        }
+    }
+
+    return "", "", nil
 }

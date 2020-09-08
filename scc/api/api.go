@@ -70,6 +70,7 @@ func NewRouter(
 
     router := mux.NewRouter()
     ver := "v1"
+    mgrset := manager.GetManagerset()
 
     // router
     verRouter := router.PathPrefix("/scc/" + ver).Subrouter()
@@ -81,48 +82,56 @@ func NewRouter(
     if overlayObjectClient == nil {
          overlayObjectClient = manager.NewOverlayObjectManager()
     }
+    mgrset.Overlay = overlayObjectClient.(*manager.OverlayObjectManager)
     createHandlerMapping(overlayObjectClient, verRouter, manager.OverlayCollection, manager.OverlayResource)
 
     // proposal API
     if proposalObjectClient == nil {
          proposalObjectClient = manager.NewProposalObjectManager()
     }
+    mgrset.Proposal = proposalObjectClient.(*manager.ProposalObjectManager)
     createHandlerMapping(proposalObjectClient, olRouter, manager.ProposalCollection, manager.ProposalResource)
 
     // hub API
     if hubObjectClient == nil {
          hubObjectClient = manager.NewHubObjectManager()
     }
+    mgrset.Hub = hubObjectClient.(*manager.HubObjectManager)
     createHandlerMapping(hubObjectClient, olRouter, manager.HubCollection, manager.HubResource)
 
     // hub-connection API
     if hubConnObjectClient == nil {
          hubConnObjectClient = manager.NewHubConnObjectManager()
     }
+    mgrset.HubConn = hubConnObjectClient.(*manager.HubConnObjectManager)
     createHandlerMapping(hubConnObjectClient, hubRouter, manager.ConnectionCollection, manager.ConnectionResource)
 
     // hub-device API
     if hubDeviceObjectClient == nil {
          hubDeviceObjectClient = manager.NewHubDeviceObjectManager()
     }
+    mgrset.HubDevice = hubDeviceObjectClient.(*manager.HubDeviceObjectManager)
     createHandlerMapping(hubDeviceObjectClient, hubRouter, manager.DeviceCollection, manager.DeviceResource)
 
     // device API
     if deviceObjectClient == nil {
          deviceObjectClient = manager.NewDeviceObjectManager()
     }
+    mgrset.Device = deviceObjectClient.(*manager.DeviceObjectManager)
     createHandlerMapping(deviceObjectClient, olRouter, manager.DeviceCollection, manager.DeviceResource)
 
     // device-connection API
     if deviceConnObjectClient == nil {
          deviceConnObjectClient = manager.NewDeviceConnObjectManager()
     }
+    mgrset.DeviceConn = deviceConnObjectClient.(*manager.DeviceConnObjectManager)
     createHandlerMapping(deviceConnObjectClient, devRouter, manager.ConnectionCollection, manager.ConnectionResource)
 
     // iprange API
     if ipRangeObjectClient == nil {
          ipRangeObjectClient = manager.NewIPRangeObjectManager()
     }
+    mgrset.IPRange = ipRangeObjectClient.(*manager.IPRangeObjectManager)
     createHandlerMapping(ipRangeObjectClient, olRouter, manager.IPRangeCollection, manager.IPRangeResource)
 
     // Add depedency

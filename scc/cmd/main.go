@@ -26,6 +26,7 @@ import (
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/auth"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/config"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/manager"
     tmpdb "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
 //    contextDb "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/contextdb"
     contextDb "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/contextdb"
@@ -36,6 +37,7 @@ func main() {
 
     rand.Seed(time.Now().UnixNano())
 
+    // create database and context database
     tmpdb.InitializeDatabaseConnection("scc")
     err := db.InitializeDatabaseConnection("scc")
     if err != nil {
@@ -51,6 +53,30 @@ func main() {
             log.Fatalln("Exiting...")
     }
 
+    // create sdewan namespace and root certificate
+    cu, err := manager.GetCertUtil()
+    if err == nil {
+        _, err = cu.CreateNamespace(manager.NameSpaceName)
+        if err == nil {
+            log.Println("Namespace is available : " + manager.NameSpaceName)
+            _, err = cu.CreateSelfSignedIssuer(manager.RootIssuerName, manager.NameSpaceName)
+            if err == nil {
+                log.Println("SDEWAN root issuer is available : " + manager.RootIssuerName)
+                _, err = cu.CreateCertificate(manager.RootCertName, manager.NameSpaceName, manager.RootIssuerName, true)
+                if err == nil {
+                    log.Println("SDEWAN root certificate is available : " + manager.RootCertName)
+                } else {
+                    log.Println(err)
+                }
+            } else {
+                log.Println(err)
+            }
+        } else {
+            log.Println(err)
+        }
+    }
+
+    // create http server
     httpRouter := api.NewRouter(nil, nil, nil, nil, nil, nil, nil, nil)
     loggedRouter := handlers.LoggingHandler(os.Stdout, httpRouter)
     log.Println("Starting SDEWAN Central Controller API")

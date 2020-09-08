@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-package module
+package manager
 
-// App contains metadata for Apps
-type OverlayObject struct {
-	Metadata ObjectMetaData `json:"metadata"`
-	Specification OverlayObjectSpec `json:"spec"`
+type Managerset struct {
+    Overlay *OverlayObjectManager
+    Proposal *ProposalObjectManager
+    Hub *HubObjectManager
+    HubConn *HubConnObjectManager
+    HubDevice *HubDeviceObjectManager
+    Device *DeviceObjectManager
+    DeviceConn *DeviceConnObjectManager
+    IPRange *IPRangeObjectManager
 }
 
-//OverlayObjectSpec contains the parameters
-type OverlayObjectSpec struct {
-}
+var mgrset = Managerset{}
 
-func (c *OverlayObject) GetMetadata() ObjectMetaData {
-	return c.Metadata
+func GetManagerset() *Managerset {
+    return &mgrset
 }
