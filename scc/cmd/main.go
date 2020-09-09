@@ -65,15 +65,17 @@ func main() {
                 _, err = cu.CreateCertificate(manager.RootCertName, manager.NameSpaceName, manager.RootIssuerName, true)
                 if err == nil {
                     log.Println("SDEWAN root certificate is available : " + manager.RootCertName)
-                } else {
-                    log.Println(err)
+                    _, err = cu.CreateCAIssuer(manager.RootCAIssuerName, manager.NameSpaceName, manager.RootCertName)
+                    if err == nil {
+                        log.Println("SDEWAN root ca issuer is available : " + manager.RootCAIssuerName)
+                    }
                 }
-            } else {
-                log.Println(err)
             }
-        } else {
-            log.Println(err)
         }
+    }
+
+    if err != nil {
+        log.Println(err)
     }
 
     // create http server

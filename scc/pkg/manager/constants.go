@@ -19,6 +19,7 @@ package manager
 const (
 	NameSpaceName = "sdewan-system"
 	RootIssuerName = "sdewan-controller"
+	RootCAIssuerName = "sdewan-controller-ca"
 	RootCertName = "sdewan-controller"
 	StoreName = "centralcontroller"
 	OverlayCollection = "overlays"

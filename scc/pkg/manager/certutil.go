@@ -21,6 +21,7 @@ import (
     "context"
     "time"
 
+    pkgerrors "github.com/pkg/errors"
     kclient "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/client"
     cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -134,7 +135,7 @@ func (c *CertUtil) CreateCertificate(name string, namespace string, issuer strin
 
     // Not existing cert, create a new one
     // Todo: add Duration, RenewBefore, DNSNames
-    return c.client.Certificates(namespace).Create(context.TODO(), &v1beta1.Certificate{
+    cert, err = c.client.Certificates(namespace).Create(context.TODO(), &v1beta1.Certificate{
         ObjectMeta: metav1.ObjectMeta{
             Name: name,
         },
@@ -151,6 +152,16 @@ func (c *CertUtil) CreateCertificate(name string, namespace string, issuer strin
             IsCA: isCA,
         },
     }, metav1.CreateOptions{})
+
+    if err == nil {
+        if c.IsCertReady(name, namespace) {
+            return cert, nil
+        } else {
+            return cert, pkgerrors.New("Failed to get certificate " + name)
+        }
+    }
+
+    return cert, err
 }
 
 func (c *CertUtil) IsCertReady(name string, namespace string) bool {
@@ -183,10 +194,6 @@ func (c *CertUtil) IsCertReady(name string, namespace string) bool {
 }
 
 func (c *CertUtil) GetKeypair(certname string, namespace string) (string, string, error) {
-    if c.IsCertReady(certname, namespace) == false {
-        return "", "", nil
-    }
-
     secret, err := c.k8sclient.Secrets(namespace).Get(
         context.TODO(),
         c.GetCertSecretName(certname),

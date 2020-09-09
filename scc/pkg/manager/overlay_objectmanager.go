@@ -111,9 +111,16 @@ func (c *OverlayObjectManager) CreateObject(m map[string]string, t module.Contro
     if err != nil {
         log.Println(err)
     } else {
-        _, err := cu.CreateCAIssuer(c.IssuerName(overlay_name), NameSpaceName, RootCertName)
-        if err != nil {
-            log.Println("Failed to create overlay[" + overlay_name +"] issuer: " + err.Error())
+        // create overlay ca
+        _, err := cu.CreateCertificate(c.CertName(overlay_name), NameSpaceName, RootCAIssuerName, true)
+        if err == nil {
+            // create overlay issuer
+            _, err := cu.CreateCAIssuer(c.IssuerName(overlay_name), NameSpaceName, c.CertName(overlay_name))
+            if err != nil {
+                log.Println("Failed to create overlay[" + overlay_name +"] issuer: " + err.Error())
+            }    
+        } else {
+            log.Println("Failed to create overlay[" + overlay_name +"] certificate: " + err.Error())
         }
     }
 
@@ -150,9 +157,13 @@ func (c *OverlayObjectManager) DeleteObject(m map[string]string) error {
     if err != nil {
         log.Println(err)
     } else {
-        err := cu.DeleteIssuer(c.IssuerName(overlay_name), NameSpaceName)
+        err = cu.DeleteIssuer(c.IssuerName(overlay_name), NameSpaceName)
         if err != nil {
             log.Println("Failed to delete overlay[" + overlay_name +"] issuer: " + err.Error())
+        }
+        err = cu.DeleteCertificate(c.CertName(overlay_name), NameSpaceName)
+        if err != nil {
+            log.Println("Failed to delete overlay[" + overlay_name +"] certificate: " + err.Error())
         }
     }
 
@@ -164,6 +175,10 @@ func (c *OverlayObjectManager) DeleteObject(m map[string]string) error {
 
 func (c *OverlayObjectManager) IssuerName(name string) string {
     return name + "-issuer"
+}
+
+func (c *OverlayObjectManager) CertName(name string) string {
+    return name + "-cert"
 }
 
 func (c *OverlayObjectManager) CreateCertificate(oname string, cname string) (string, string, error) {
