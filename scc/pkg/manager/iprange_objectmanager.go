@@ -17,11 +17,13 @@
 package manager
 
 import (
-	"io"
-	"encoding/json"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
-	pkgerrors "github.com/pkg/errors"
+    "io"
+    "encoding/json"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/validation"
+    "github.com/go-playground/validator/v10"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+    pkgerrors "github.com/pkg/errors"
 )
 
 type IPRangeObjectKey struct {
@@ -35,17 +37,36 @@ type IPRangeObjectManager struct {
 }
 
 func NewIPRangeObjectManager() *IPRangeObjectManager {
+    object_meta := "iprange"
+    validate := validation.GetValidator(object_meta)
+    validate.RegisterStructValidation(ValidateIPRangeObject, module.IPRangeObject{})
+
 	return &IPRangeObjectManager{
         BaseObjectManager {
             storeName:  StoreName,
-            tagMeta:    "iprange",
+            tagMeta:    object_meta,
             depResManagers: []ControllerObjectManager {},
             ownResManagers: []ControllerObjectManager {},
         },
 	}
 }
 
+func ValidateIPRangeObject(sl validator.StructLevel) {
+    obj := sl.Current().Interface().(module.IPRangeObject)
+
+    if obj.Specification.MinIp != 0 && obj.Specification.MaxIp != 0 {
+        if obj.Specification.MinIp > obj.Specification.MaxIp {
+            sl.ReportError(obj.Specification.MinIp, "Range", "Range", "InValidateIPRange", "")
+        }
+    }
+}
+
 func (c *IPRangeObjectManager) IsOperationSupported(oper string) bool {
+    if oper == "PUT" {
+        // Not allowed for update
+        return false
+    }
+
 	return true
 }
 
@@ -71,12 +92,12 @@ func (c *IPRangeObjectManager) GetStoreKey(m map[string]string, t module.Control
     if res_name != "" {
         if meta_name != "" && res_name != meta_name {
             return key, pkgerrors.New("Resource name unmatched metadata name")
-        } 
+        }
 
         key.IPRangeName = res_name
     } else {
         if meta_name == "" {
-            return key, pkgerrors.New("Unable to find resource name")  
+            return key, pkgerrors.New("Unable to find resource name")
         }
 
         key.IPRangeName = meta_name
@@ -89,12 +110,30 @@ func (c *IPRangeObjectManager) ParseObject(r io.Reader) (module.ControllerObject
 	var v module.IPRangeObject
     err := json.NewDecoder(r).Decode(&v)
 
+    // initial Status
+    for i:=0; i<32; i++ {
+        v.Status.Masks[i] = 0
+    }
+    v.Status.Data = make(map[int]string)
     return &v, err
 }
 
 func (c *IPRangeObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// DB Operation
-    t, err := GetDBUtils().CreateObject(c, m, t)
+	// Check whether conflict with other IPRange object
+    objs, err := c.GetObjects(m)
+    if err != nil {
+        return t, pkgerrors.Wrap(err, "Failed to get available IPRange objects")
+    }
+
+    ot := t.(*module.IPRangeObject)
+    for _, obj := range objs {
+        if ot.IsConflict(obj.(*module.IPRangeObject)) {
+            return c.CreateEmptyObject(), pkgerrors.New("Conflicted with IPRange object: " + obj.(*module.IPRangeObject).Metadata.Name)
+        }
+    }
+
+    // DB Operation
+    t, err = GetDBUtils().CreateObject(c, m, t)
 
     return t, err
 }
@@ -121,8 +160,83 @@ func (c *IPRangeObjectManager) UpdateObject(m map[string]string, t module.Contro
 }
 
 func (c *IPRangeObjectManager) DeleteObject(m map[string]string) error {
-	// DB Operation
-    err := GetDBUtils().DeleteObject(c, m)
+	// Check whether in used
+    obj, err := c.GetObject(m)
+    if err != nil {
+        return pkgerrors.Wrap(err, "Failed to get IPRange object")
+    }
+
+    if obj.(*module.IPRangeObject).InUsed() {
+        return pkgerrors.New("The IPRange object is in used")
+    }
+
+    // DB Operation
+    err = GetDBUtils().DeleteObject(c, m)
 
     return err
+}
+
+func (c *IPRangeObjectManager) Allocate(oname string, name string) (string, error) {
+    m := make(map[string]string)
+    m[OverlayResource] = oname
+
+    objs, err := c.GetObjects(m)
+    if err != nil {
+        return "", pkgerrors.Wrap(err, "Failed to get available IPRange objects")
+    }
+
+    for _, obj := range objs {
+        tobj := obj.(*module.IPRangeObject)
+        aip, err := tobj.Allocate(name)
+        if err == nil {
+            // save update object in DB
+            c.UpdateObject(m, tobj)
+            return aip, nil
+        }
+    }
+
+    return "", pkgerrors.New("No available ip")
+}
+
+func (c *IPRangeObjectManager) Free(oname string, ip string) error {
+    m := make(map[string]string)
+    m[OverlayResource] = oname
+
+    objs, err := c.GetObjects(m)
+    if err != nil {
+        return pkgerrors.Wrap(err, "Failed to get available IPRange objects")
+    }
+
+    for _, obj := range objs {
+        tobj := obj.(*module.IPRangeObject)
+        err := tobj.Free(ip)
+        if err == nil {
+            // save update object in DB
+            c.UpdateObject(m, tobj)
+            return nil
+        }
+    }
+
+    return pkgerrors.New("ip " + ip + " is not allocated")
+}
+
+func (c *IPRangeObjectManager) FreeAll(oname string) error {
+    m := make(map[string]string)
+    m[OverlayResource] = oname
+
+    objs, err := c.GetObjects(m)
+    if err != nil {
+        return pkgerrors.Wrap(err, "Failed to get available IPRange objects")
+    }
+
+    for _, obj := range objs {
+        tobj := obj.(*module.IPRangeObject)
+        err := tobj.FreeAll()
+        if err == nil {
+            // save update object in DB
+            c.UpdateObject(m, tobj)
+        }
+    }
+
+    return nil
 }

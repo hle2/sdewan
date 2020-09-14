@@ -104,8 +104,32 @@ func (c *ProposalObjectManager) CreateObject(m map[string]string, t module.Contr
     log.Println("Crt: \n" + crt)
     log.Println("Key: \n" + key)
 
+    // for ip range test
+    iprange := GetManagerset().IPRange
+    var nip string
+    var ip [5]string
+    var err error
+    for i:=0; i<5; i++ {
+        ip[i], err = iprange.Allocate(oname, "Dev1")
+        if err != nil {
+            log.Println(err)
+        } else {
+            log.Println("Allocated IP: " + ip[i])
+        }
+    }
+    
+    log.Println("Free IP: " + ip[2])
+    iprange.Free(oname, ip[2])
+
+    nip, err = iprange.Allocate(oname, "Dev1")
+    if err != nil {
+        log.Println(err)
+    } else {
+        log.Println("Allocated IP: " + nip)
+    }
+
     // DB Operation
-    t, err := GetDBUtils().CreateObject(c, m, t)
+    t, err = GetDBUtils().CreateObject(c, m, t)
 
     return t, err
 }
@@ -137,6 +161,11 @@ func (c *ProposalObjectManager) DeleteObject(m map[string]string) error {
     pname := m[ProposalResource]
     log.Println("Delete Certificate: " + pname + "-cert")
     overlay.DeleteCertificate(pname + "-cert")
+
+    // for ip range test
+    iprange := GetManagerset().IPRange
+    oname := m[OverlayResource]
+    iprange.FreeAll(oname)
 
     // DB Operation
     err := GetDBUtils().DeleteObject(c, m)

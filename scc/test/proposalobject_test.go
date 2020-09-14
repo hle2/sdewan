@@ -17,12 +17,20 @@ func TestMain(m *testing.M) {
     servIp := flag.String("ip", "127.0.0.1", "SDEWAN Central Controller IP Address")
     flag.Parse()
     OverlayUrl = "http://" + *servIp + ":9015/scc/v1/" + manager.OverlayCollection
+    IPBaseUrl := OverlayUrl + "/overlay1/" + manager.IPRangeCollection
     BaseUrl = OverlayUrl + "/overlay1/" + manager.ProposalCollection
 
     var overlay_object = module.OverlayObject{
         Metadata: module.ObjectMetaData{"overlay1", "", "", ""}, 
         Specification: module.OverlayObjectSpec{}}
     
+    var iprange_object1 = module.IPRangeObject{
+        Metadata: module.ObjectMetaData{"ipr1", "", "", ""}, 
+        Specification: module.IPRangeObjectSpec{"192.168.0.2", 10, 20}}
+    var iprange_object2 = module.IPRangeObject{
+        Metadata: module.ObjectMetaData{"ipr2", "", "", ""}, 
+        Specification: module.IPRangeObjectSpec{"192.168.2.2", 18, 20}}
+
     var proposal_object1 = module.ProposalObject{
         Metadata: module.ObjectMetaData{"proposal1", "", "", ""}, 
         Specification: module.ProposalObjectSpec{"aes256", "sha256", "modp4096"}}
@@ -31,6 +39,8 @@ func TestMain(m *testing.M) {
         Specification: module.ProposalObjectSpec{"aes512", "sha512", "modp4096"}}
     
     createControllerObject(OverlayUrl, &overlay_object, &module.OverlayObject{})
+    createControllerObject(IPBaseUrl, &iprange_object1, &module.IPRangeObject{})
+    createControllerObject(IPBaseUrl, &iprange_object2, &module.IPRangeObject{})
     createControllerObject(BaseUrl, &proposal_object1, &module.ProposalObject{})
     createControllerObject(BaseUrl, &proposal_object2, &module.ProposalObject{})
 
@@ -38,6 +48,8 @@ func TestMain(m *testing.M) {
 
     deleteControllerObject(BaseUrl, "proposal1")
     deleteControllerObject(BaseUrl, "proposal2")
+    deleteControllerObject(IPBaseUrl, "ipr1")
+    deleteControllerObject(IPBaseUrl, "ipr2")
     deleteControllerObject(OverlayUrl, "overlay1")
 
     os.Exit(ret)
