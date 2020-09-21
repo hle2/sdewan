@@ -17,15 +17,15 @@
 package manager
 
 import (
-	"io"
-	"encoding/json"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
-	pkgerrors "github.com/pkg/errors"
+    "io"
+    "encoding/json"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+    pkgerrors "github.com/pkg/errors"
 )
 
 type DeviceConnObjectKey struct {
-	OverlayName	string `json:"overlay-name"`
+    OverlayName string `json:"overlay-name"`
     DeviceName string `json:"device-name"`
     ConnName string `json:"connection-name"`
 }
@@ -36,22 +36,21 @@ type DeviceConnObjectManager struct {
 }
 
 func NewDeviceConnObjectManager() *DeviceConnObjectManager {
-	return &DeviceConnObjectManager{
+    return &DeviceConnObjectManager{
         BaseObjectManager {
             storeName:  StoreName,
             tagMeta:    "deviceconn",
             depResManagers: []ControllerObjectManager {},
             ownResManagers: []ControllerObjectManager {},
         },
-	}
+    }
 }
 
 func (c *DeviceConnObjectManager) IsOperationSupported(oper string) bool {
     if oper == "GETS" {
         return true
     }
-
-	return false
+    return false
 }
 
 func (c *DeviceConnObjectManager) CreateEmptyObject() module.ControllerObject {
@@ -93,30 +92,29 @@ func (c *DeviceConnObjectManager) GetStoreKey(m map[string]string, t module.Cont
 }
 
 func (c *DeviceConnObjectManager) ParseObject(r io.Reader) (module.ControllerObject, error) {
-	var v module.ConnectionObject
+    var v module.ConnectionObject
     err := json.NewDecoder(r).Decode(&v)
 
     return &v, err
 }
 
 func (c *DeviceConnObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
+    return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
 }
 
 func (c *DeviceConnObjectManager) GetObject(m map[string]string) (module.ControllerObject, error) {
-	return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
+    return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
 }
 
 func (c *DeviceConnObjectManager) GetObjects(m map[string]string) ([]module.ControllerObject, error) {
     // Todo: Query Hub Connection Status
-    
     return []module.ControllerObject{}, nil
 }
 
 func (c *DeviceConnObjectManager) UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
+    return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
 }
 
 func (c *DeviceConnObjectManager) DeleteObject(m map[string]string) error {
-	return pkgerrors.New("Not implemented")
+    return pkgerrors.New("Not implemented")
 }

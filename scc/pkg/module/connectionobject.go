@@ -24,8 +24,8 @@ type ConnectionObject struct {
 
 //ConnectionObjectSpec contains the parameters
 type ConnectionObjectSpec struct {
-	Type    	string 	`json:"type"`
-	IP    		bool 	`json:"ip"`
+    Type    	string 	`json:"type"`
+    IP    		bool 	`json:"ip"`
 	Status		string 	`json:"status"`
 	ErrorMessage	string	`json:"errorMessage"`
 }

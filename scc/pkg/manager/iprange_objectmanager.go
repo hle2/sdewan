@@ -27,7 +27,7 @@ import (
 )
 
 type IPRangeObjectKey struct {
-	OverlayName	string `json:"overlay-name"`
+    OverlayName string `json:"overlay-name"`
     IPRangeName string `json:"iprange-name"`
 }
 
@@ -41,14 +41,14 @@ func NewIPRangeObjectManager() *IPRangeObjectManager {
     validate := validation.GetValidator(object_meta)
     validate.RegisterStructValidation(ValidateIPRangeObject, module.IPRangeObject{})
 
-	return &IPRangeObjectManager{
+    return &IPRangeObjectManager{
         BaseObjectManager {
             storeName:  StoreName,
             tagMeta:    object_meta,
             depResManagers: []ControllerObjectManager {},
             ownResManagers: []ControllerObjectManager {},
         },
-	}
+    }
 }
 
 func ValidateIPRangeObject(sl validator.StructLevel) {
@@ -66,8 +66,7 @@ func (c *IPRangeObjectManager) IsOperationSupported(oper string) bool {
         // Not allowed for update
         return false
     }
-
-	return true
+    return true
 }
 
 func (c *IPRangeObjectManager) CreateEmptyObject() module.ControllerObject {
@@ -107,7 +106,7 @@ func (c *IPRangeObjectManager) GetStoreKey(m map[string]string, t module.Control
 }
 
 func (c *IPRangeObjectManager) ParseObject(r io.Reader) (module.ControllerObject, error) {
-	var v module.IPRangeObject
+    var v module.IPRangeObject
     err := json.NewDecoder(r).Decode(&v)
 
     // initial Status
@@ -119,7 +118,7 @@ func (c *IPRangeObjectManager) ParseObject(r io.Reader) (module.ControllerObject
 }
 
 func (c *IPRangeObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// Check whether conflict with other IPRange object
+    // Check whether conflict with other IPRange object
     objs, err := c.GetObjects(m)
     if err != nil {
         return t, pkgerrors.Wrap(err, "Failed to get available IPRange objects")
@@ -139,7 +138,7 @@ func (c *IPRangeObjectManager) CreateObject(m map[string]string, t module.Contro
 }
 
 func (c *IPRangeObjectManager) GetObject(m map[string]string) (module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     t, err := GetDBUtils().GetObject(c, m)
 
     return t, err
@@ -153,14 +152,14 @@ func (c *IPRangeObjectManager) GetObjects(m map[string]string) ([]module.Control
 }
 
 func (c *IPRangeObjectManager) UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     t, err := GetDBUtils().UpdateObject(c, m, t)
 
     return t, err
 }
 
 func (c *IPRangeObjectManager) DeleteObject(m map[string]string) error {
-	// Check whether in used
+    // Check whether in used
     obj, err := c.GetObject(m)
     if err != nil {
         return pkgerrors.Wrap(err, "Failed to get IPRange object")

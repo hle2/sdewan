@@ -19,13 +19,31 @@ package resource
 import (
 )
 
-const (
-    SdewanApiVersion = "batch.sdewan.akraino.org/v1alpha1"
-    SdewanPurpose = "base"
-)
+type ProposalResource struct {
+    Name string
+    Encryption string
+    Hash string
+    DhGroup string
+}
 
-type ISdewanResource interface {
-	GetName() string
-	GetType() string
-	ToYaml() string
+func (c *ProposalResource) GetName() string {
+    return c.Name
+}
+
+func (c *ProposalResource) GetType() string {
+    return "IpsecProposal"
+}
+
+func (c *ProposalResource) ToYaml() string {
+    return `apiVersion: ` + SdewanApiVersion + `
+kind: IpsecProposal
+metadata:
+  name:` + c.Name + `
+  namespace: default
+  labels:
+    sdewanPurpose: ` + SdewanPurpose + `
+spec:
+  encryption_algorithm: ` + c.Encryption + `
+  hash_algorithm: ` + c.Hash + `
+  dh_group: ` + c.DhGroup
 }

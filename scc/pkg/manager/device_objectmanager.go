@@ -17,15 +17,15 @@
 package manager
 
 import (
-	"io"
-	"encoding/json"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
-	pkgerrors "github.com/pkg/errors"
+    "io"
+    "encoding/json"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+    pkgerrors "github.com/pkg/errors"
 )
 
 type DeviceObjectKey struct {
-	OverlayName	string `json:"overlay-name"`
+    OverlayName string `json:"overlay-name"`
     DeviceName string `json:"device-name"`
 }
 
@@ -35,18 +35,18 @@ type DeviceObjectManager struct {
 }
 
 func NewDeviceObjectManager() *DeviceObjectManager {
-	return &DeviceObjectManager{
+    return &DeviceObjectManager{
         BaseObjectManager {
             storeName:  StoreName,
             tagMeta:    "device",
             depResManagers: []ControllerObjectManager {},
             ownResManagers: []ControllerObjectManager {},
         },
-	}
+    }
 }
 
 func (c *DeviceObjectManager) IsOperationSupported(oper string) bool {
-	return true
+    return true
 }
 
 func (c *DeviceObjectManager) CreateEmptyObject() module.ControllerObject {
@@ -86,21 +86,21 @@ func (c *DeviceObjectManager) GetStoreKey(m map[string]string, t module.Controll
 }
 
 func (c *DeviceObjectManager) ParseObject(r io.Reader) (module.ControllerObject, error) {
-	var v module.DeviceObject
+    var v module.DeviceObject
     err := json.NewDecoder(r).Decode(&v)
 
     return &v, err
 }
 
 func (c *DeviceObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     t, err := GetDBUtils().CreateObject(c, m, t)
 
     return t, err
 }
 
 func (c *DeviceObjectManager) GetObject(m map[string]string) (module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     t, err := GetDBUtils().GetObject(c, m)
 
     return t, err
@@ -114,14 +114,14 @@ func (c *DeviceObjectManager) GetObjects(m map[string]string) ([]module.Controll
 }
 
 func (c *DeviceObjectManager) UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     t, err := GetDBUtils().UpdateObject(c, m, t)
 
     return t, err
 }
 
 func (c *DeviceObjectManager) DeleteObject(m map[string]string) error {
-	// DB Operation
+    // DB Operation
     err := GetDBUtils().DeleteObject(c, m)
 
     return err

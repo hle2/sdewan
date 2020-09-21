@@ -17,15 +17,15 @@
 package manager
 
 import (
-	"io"
-	"encoding/json"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
-	pkgerrors "github.com/pkg/errors"
+    "io"
+    "encoding/json"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+    pkgerrors "github.com/pkg/errors"
 )
 
 type HubConnObjectKey struct {
-	OverlayName	string `json:"overlay-name"`
+    OverlayName string `json:"overlay-name"`
     HubName string `json:"hub-name"`
     ConnName string `json:"connection-name"`
 }
@@ -36,22 +36,21 @@ type HubConnObjectManager struct {
 }
 
 func NewHubConnObjectManager() *HubConnObjectManager {
-	return &HubConnObjectManager{
+    return &HubConnObjectManager{
         BaseObjectManager {
             storeName:  StoreName,
             tagMeta:    "hubconn",
             depResManagers: []ControllerObjectManager {},
             ownResManagers: []ControllerObjectManager {},
         },
-	}
+    }
 }
 
 func (c *HubConnObjectManager) IsOperationSupported(oper string) bool {
     if oper == "GETS" {
         return true
     }
-
-	return false
+    return false
 }
 
 func (c *HubConnObjectManager) CreateEmptyObject() module.ControllerObject {
@@ -93,18 +92,18 @@ func (c *HubConnObjectManager) GetStoreKey(m map[string]string, t module.Control
 }
 
 func (c *HubConnObjectManager) ParseObject(r io.Reader) (module.ControllerObject, error) {
-	var v module.ConnectionObject
+    var v module.ConnectionObject
     err := json.NewDecoder(r).Decode(&v)
 
     return &v, err
 }
 
 func (c *HubConnObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
+    return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
 }
 
 func (c *HubConnObjectManager) GetObject(m map[string]string) (module.ControllerObject, error) {
-	return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
+    return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
 }
 
 func (c *HubConnObjectManager) GetObjects(m map[string]string) ([]module.ControllerObject, error) {
@@ -114,9 +113,9 @@ func (c *HubConnObjectManager) GetObjects(m map[string]string) ([]module.Control
 }
 
 func (c *HubConnObjectManager) UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
+    return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
 }
 
 func (c *HubConnObjectManager) DeleteObject(m map[string]string) error {
-	return pkgerrors.New("Not implemented")
+    return pkgerrors.New("Not implemented")
 }

@@ -16,6 +16,10 @@
 
 package module
 
+import (
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"
+)
+
 // App contains metadata for Apps
 type ProposalObject struct {
 	Metadata ObjectMetaData `json:"metadata"`
@@ -31,4 +35,13 @@ type ProposalObjectSpec struct {
 
 func (c *ProposalObject) GetMetadata() ObjectMetaData {
 	return c.Metadata
+}
+
+func (c *ProposalObject) ToResource() *resource.ProposalResource {
+    return &resource.ProposalResource{
+        Name: c.Metadata.Name,
+        Encryption: c.Specification.Encryption,
+        Hash: c.Specification.Hash,
+        DhGroup: c.Specification.DhGroup,
+    }
 }

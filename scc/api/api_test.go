@@ -14,9 +14,7 @@ limitations under the License.
 package api
 
 import (
-
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/manager"
-
     "github.com/gorilla/mux"
 )
 

@@ -18,15 +18,15 @@ package manager
 
 import (
     "log"
-	"io"
-	"encoding/json"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
-	pkgerrors "github.com/pkg/errors"
+    "io"
+    "encoding/json"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+    pkgerrors "github.com/pkg/errors"
 )
 
 type ProposalObjectKey struct {
-	OverlayName	string `json:"overlay-name"`
+    OverlayName  string `json:"overlay-name"`
     ProposalName string `json:"proposal-name"`
 }
 
@@ -36,18 +36,18 @@ type ProposalObjectManager struct {
 }
 
 func NewProposalObjectManager() *ProposalObjectManager {
-	return &ProposalObjectManager{
+    return &ProposalObjectManager{
         BaseObjectManager {
             storeName:  StoreName,
             tagMeta:    "proposal",
             depResManagers: []ControllerObjectManager {},
             ownResManagers: []ControllerObjectManager {},
         },
-	}
+    }
 }
 
 func (c *ProposalObjectManager) IsOperationSupported(oper string) bool {
-	return true
+    return true
 }
 
 func (c *ProposalObjectManager) CreateEmptyObject() module.ControllerObject {
@@ -87,14 +87,14 @@ func (c *ProposalObjectManager) GetStoreKey(m map[string]string, t module.Contro
 }
 
 func (c *ProposalObjectManager) ParseObject(r io.Reader) (module.ControllerObject, error) {
-	var v module.ProposalObject
+    var v module.ProposalObject
     err := json.NewDecoder(r).Decode(&v)
 
     return &v, err
 }
 
 func (c *ProposalObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// for certificate test
+    // for certificate test
     overlay := GetManagerset().Overlay
     to := t.(*module.ProposalObject)
     pname := to.Metadata.Name
@@ -135,7 +135,7 @@ func (c *ProposalObjectManager) CreateObject(m map[string]string, t module.Contr
 }
 
 func (c *ProposalObjectManager) GetObject(m map[string]string) (module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     t, err := GetDBUtils().GetObject(c, m)
 
     return t, err
@@ -149,14 +149,14 @@ func (c *ProposalObjectManager) GetObjects(m map[string]string) ([]module.Contro
 }
 
 func (c *ProposalObjectManager) UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     t, err := GetDBUtils().UpdateObject(c, m, t)
 
     return t, err
 }
 
 func (c *ProposalObjectManager) DeleteObject(m map[string]string) error {
-	// for certificate test
+    // for certificate test
     overlay := GetManagerset().Overlay
     pname := m[ProposalResource]
     log.Println("Delete Certificate: " + pname + "-cert")

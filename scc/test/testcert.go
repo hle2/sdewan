@@ -133,15 +133,24 @@ func GetCertUtil() (*CertUtil, error) {
 
 func (c *CertUtil) CreateNamespace(name string) (*v1.Namespace, error) {
     ns, err := c.k8sclient.Namespaces().Get(context.TODO(), name, metav1.GetOptions{})
-	if err == nil {
-		return ns, nil
-	}
+    
+        if err == nil {
+    
+            
+        return ns, nil
+    
+        }
 
     log.Println("Create Namespace: " + name)
     return c.k8sclient.Namespaces().Create(context.TODO(), &v1.Namespace{
         ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
+    
+            
+            
+        Name: name,
+    
+            
+        },
     }, metav1.CreateOptions{})
 }
 
@@ -165,16 +174,40 @@ func (c *CertUtil) CreateSelfSignedIssuer(name string, namespace string) (*v1bet
 
     // Not existing issuer, create a new one
     return c.client.Issuers(namespace).Create(context.TODO(), &v1beta1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1beta1.IssuerSpec{
-			IssuerConfig: v1beta1.IssuerConfig{
-				SelfSigned: &v1beta1.SelfSignedIssuer{
-				},
-			},
+    
+            
+        ObjectMeta: metav1.ObjectMeta{
+    
+            
+            
+        Name: name,
+    
+            
         },
-	}, metav1.CreateOptions{})
+    
+            
+        Spec: v1beta1.IssuerSpec{
+    
+            
+            
+        IssuerConfig: v1beta1.IssuerConfig{
+    
+            
+            
+            
+        SelfSigned: &v1beta1.SelfSignedIssuer{
+    
+            
+            
+            
+        },
+    
+            
+            
+        },
+        },
+    
+        }, metav1.CreateOptions{})
 }
 
 func (c *CertUtil) CreateCAIssuer(name string, namespace string, caname string) (*v1beta1.Issuer, error) {
@@ -185,17 +218,41 @@ func (c *CertUtil) CreateCAIssuer(name string, namespace string, caname string) 
 
     // Not existing issuer, create a new one
     return c.client.Issuers(namespace).Create(context.TODO(), &v1beta1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1beta1.IssuerSpec{
-			IssuerConfig: v1beta1.IssuerConfig{
-				CA: &v1beta1.CAIssuer{
-                    SecretName: c.GetCertSecretName(caname),
-				},
-			},
+    
+            
+        ObjectMeta: metav1.ObjectMeta{
+    
+            
+            
+        Name: name,
+    
+            
         },
-	}, metav1.CreateOptions{})
+    
+            
+        Spec: v1beta1.IssuerSpec{
+    
+            
+            
+        IssuerConfig: v1beta1.IssuerConfig{
+    
+            
+            
+            
+        CA: &v1beta1.CAIssuer{
+                    SecretName: c.GetCertSecretName(caname),
+    
+            
+            
+            
+        },
+    
+            
+            
+        },
+        },
+    
+        }, metav1.CreateOptions{})
 }
 
 func (c *CertUtil) GetCertSecretName(name string) string {
@@ -219,10 +276,19 @@ func (c *CertUtil) CreateCertificate(name string, namespace string, issuer strin
     // Not existing cert, create a new one
     // Todo: add Duration, RenewBefore, DNSNames
     return c.client.Certificates(namespace).Create(context.TODO(), &v1beta1.Certificate{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1beta1.CertificateSpec{
+    
+            
+        ObjectMeta: metav1.ObjectMeta{
+    
+            
+            
+        Name: name,
+    
+            
+        },
+    
+            
+        Spec: v1beta1.CertificateSpec{
             CommonName: name,
             // Duration: duration,
             // RenewBefore: renewBefore,
@@ -234,19 +300,38 @@ func (c *CertUtil) CreateCertificate(name string, namespace string, issuer strin
             },
             IsCA: isCA,
         },
-	}, metav1.CreateOptions{})
+    
+        }, metav1.CreateOptions{})
 }
 
 func (c *CertUtil) IsCertReady(name string, namespace string) bool {
     err := wait.PollImmediate(time.Second, time.Second*20,
-		func() (bool, error) {
-			var err error
+    
+            
+        func() (bool, error) {
+    
+            
+            
+        var err error
             var crt *v1beta1.Certificate
-			crt, err = c.GetCertificate(name, namespace)
-			if err != nil {
-				log.Println("Failed to find certificate " + name + ": " + err.Error())
+    
+            
+            
+        crt, err = c.GetCertificate(name, namespace)
+    
+            
+            
+        if err != nil {
+    
+            
+            
+            
+        log.Println("Failed to find certificate " + name + ": " + err.Error())
                 return false, err
-			}
+    
+            
+            
+        }
             curConditions := crt.Status.Conditions
             for _, cond := range curConditions {
                 if v1beta1.CertificateConditionReady == cond.Type && cmmeta.ConditionTrue == cond.Status {
@@ -254,9 +339,15 @@ func (c *CertUtil) IsCertReady(name string, namespace string) bool {
                 }
             }
             log.Println("Waiting for Certificate " + name + " to be ready.")
-			return false, nil
-		},
-	)
+    
+            
+            
+        return false, nil
+    
+            
+        },
+    
+        )
 
     if err != nil {
         log.Println(err)

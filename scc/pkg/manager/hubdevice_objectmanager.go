@@ -17,41 +17,40 @@
 package manager
 
 import (
-	"io"
-	"encoding/json"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
-	pkgerrors "github.com/pkg/errors"
+    "io"
+    "encoding/json"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+    pkgerrors "github.com/pkg/errors"
 )
 
 type HubDeviceObjectKey struct {
-	OverlayName	string `json:"overlay-name"`
+    OverlayName string `json:"overlay-name"`
     HubName string `json:"hub-name"`
     DeviceName string `json:"device-name"`
 }
 
 // HubDeviceObjectManager implements the ControllerObjectManager
 type HubDeviceObjectManager struct {
-	BaseObjectManager
+    BaseObjectManager
 }
 
 func NewHubDeviceObjectManager() *HubDeviceObjectManager {
-	return &HubDeviceObjectManager{
+    return &HubDeviceObjectManager{
         BaseObjectManager {
             storeName:  StoreName,
             tagMeta:    "hubdevice",
             depResManagers: []ControllerObjectManager {},
             ownResManagers: []ControllerObjectManager {},
         },
-	}
+    }
 }
 
 func (c *HubDeviceObjectManager) IsOperationSupported(oper string) bool {
     if oper == "POST" || oper == "DELETE" {
         return true
     }
-
-	return false
+    return false
 }
 
 func (c *HubDeviceObjectManager) CreateEmptyObject() module.ControllerObject {
@@ -72,19 +71,19 @@ func (c *HubDeviceObjectManager) GetStoreKey(m map[string]string, t module.Contr
 }
 
 func (c *HubDeviceObjectManager) ParseObject(r io.Reader) (module.ControllerObject, error) {
-	var v module.HubDeviceObject
+    var v module.HubDeviceObject
     err := json.NewDecoder(r).Decode(&v)
 
     return &v, err
 }
 
 func (c *HubDeviceObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// Todo: setup hub-device connection
+    // Todo: setup hub-device connection
     return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
 }
 
 func (c *HubDeviceObjectManager) GetObject(m map[string]string) (module.ControllerObject, error) {
-	return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
+    return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
 }
 
 func (c *HubDeviceObjectManager) GetObjects(m map[string]string) ([]module.ControllerObject, error) {
@@ -92,10 +91,10 @@ func (c *HubDeviceObjectManager) GetObjects(m map[string]string) ([]module.Contr
 }
 
 func (c *HubDeviceObjectManager) UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
+    return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
 }
 
 func (c *HubDeviceObjectManager) DeleteObject(m map[string]string) error {
     // Todo: delete hub-device connection
-	return pkgerrors.New("Not implemented")
+    return pkgerrors.New("Not implemented")
 }

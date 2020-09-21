@@ -17,10 +17,9 @@
 package manager
 
 import (
-	"log"
+    "log"
     "context"
     "time"
-
     pkgerrors "github.com/pkg/errors"
     kclient "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/client"
     cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"

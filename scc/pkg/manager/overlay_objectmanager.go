@@ -27,7 +27,7 @@ import (
 )
 
 type OverlayObjectKey struct {
-	OverlayName	string `json:"overlay-name"`
+    OverlayName string `json:"overlay-name"`
 }
 
 // OverlayObjectManager implements the ControllerObjectManager
@@ -36,18 +36,18 @@ type OverlayObjectManager struct {
 }
 
 func NewOverlayObjectManager() *OverlayObjectManager {
-	return &OverlayObjectManager{
+    return &OverlayObjectManager{
         BaseObjectManager {
             storeName:  StoreName,
             tagMeta:    "overlay",
             depResManagers: []ControllerObjectManager {},
             ownResManagers: []ControllerObjectManager {},
         },
-	}
+    }
 }
 
 func (c *OverlayObjectManager) IsOperationSupported(oper string) bool {
-	return true
+    return true
 }
 
 func (c *OverlayObjectManager) CreateEmptyObject() module.ControllerObject {
@@ -83,7 +83,7 @@ func (c *OverlayObjectManager) GetStoreKey(m map[string]string, t module.Control
 }
 
 func (c *OverlayObjectManager) ParseObject(r io.Reader) (module.ControllerObject, error) {
-	var v module.OverlayObject
+    var v module.OverlayObject
     err := json.NewDecoder(r).Decode(&v)
 
     return &v, err
@@ -131,21 +131,21 @@ func (c *OverlayObjectManager) CreateObject(m map[string]string, t module.Contro
 }
 
 func (c *OverlayObjectManager) GetObject(m map[string]string) (module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     t, err := GetDBUtils().GetObject(c, m)
 
     return t, err
 }
 
 func (c *OverlayObjectManager) GetObjects(m map[string]string) ([]module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     t, err := GetDBUtils().GetObjects(c, m)
 
     return t, err
 }
 
 func (c *OverlayObjectManager) UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     t, err := GetDBUtils().UpdateObject(c, m, t)
 
     return t, err

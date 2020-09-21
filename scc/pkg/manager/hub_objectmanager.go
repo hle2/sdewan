@@ -17,15 +17,16 @@
 package manager
 
 import (
-	"io"
-	"encoding/json"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
-	pkgerrors "github.com/pkg/errors"
+    "io"
+    "encoding/json"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+    
+    pkgerrors "github.com/pkg/errors"
 )
 
 type HubObjectKey struct {
-	OverlayName	string `json:"overlay-name"`
+    OverlayName string `json:"overlay-name"`
     HubName string `json:"hub-name"`
 }
 
@@ -35,18 +36,18 @@ type HubObjectManager struct {
 }
 
 func NewHubObjectManager() *HubObjectManager {
-	return &HubObjectManager{
+    return &HubObjectManager{
         BaseObjectManager {
             storeName:  StoreName,
             tagMeta:    "hub",
             depResManagers: []ControllerObjectManager {},
             ownResManagers: []ControllerObjectManager {},
         },
-	}
+    }
 }
 
 func (c *HubObjectManager) IsOperationSupported(oper string) bool {
-	return true
+    return true
 }
 
 func (c *HubObjectManager) CreateEmptyObject() module.ControllerObject {
@@ -86,14 +87,14 @@ func (c *HubObjectManager) GetStoreKey(m map[string]string, t module.ControllerO
 }
 
 func (c *HubObjectManager) ParseObject(r io.Reader) (module.ControllerObject, error) {
-	var v module.HubObject
+    var v module.HubObject
     err := json.NewDecoder(r).Decode(&v)
 
     return &v, err
 }
 
 func (c *HubObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     err :=  GetDBUtils().CheckDep(c, m)
     if err != nil {
         return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to create the object")
@@ -115,7 +116,7 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
 }
 
 func (c *HubObjectManager) GetObject(m map[string]string) (module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     t, err := GetDBUtils().GetObject(c, m)
 
     return t, err
@@ -129,14 +130,14 @@ func (c *HubObjectManager) GetObjects(m map[string]string) ([]module.ControllerO
 }
 
 func (c *HubObjectManager) UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	// DB Operation
+    // DB Operation
     t, err := GetDBUtils().UpdateObject(c, m, t)
 
     return t, err
 }
 
 func (c *HubObjectManager) DeleteObject(m map[string]string) error {
-	// DB Operation
+    // DB Operation
     err := GetDBUtils().DeleteObject(c, m)
 
     return err

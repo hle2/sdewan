@@ -17,9 +17,9 @@
 package manager
 
 import (
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
-	pkgerrors "github.com/pkg/errors"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+    pkgerrors "github.com/pkg/errors"
 )
 
 type DBUtils struct {
@@ -28,7 +28,7 @@ type DBUtils struct {
 var dbutils = DBUtils{}
 
 func GetDBUtils() *DBUtils {
-	return &dbutils
+    return &dbutils
 }
 
 func (d *DBUtils) CheckDep(c ControllerObjectManager, m map[string]string) error {
@@ -46,14 +46,14 @@ func (d *DBUtils) CheckDep(c ControllerObjectManager, m map[string]string) error
 func (d *DBUtils) CreateObject(c ControllerObjectManager, 
     m map[string]string, 
     t module.ControllerObject) (module.ControllerObject, error) {
+ 
+    key, _ := c.GetStoreKey(m, t, false)
+    err := db.DBconn.Insert(c.GetStoreName(), key, nil, c.GetStoreMeta(), t)
+    if err != nil {
+        return c.CreateEmptyObject(), pkgerrors.New("Unable to create the object")
+    }
 
-	key, _ := c.GetStoreKey(m, t, false)
-	err := db.DBconn.Insert(c.GetStoreName(), key, nil, c.GetStoreMeta(), t)
-	if err != nil {
-	    return c.CreateEmptyObject(), pkgerrors.New("Unable to create the object")
-	}
-
-	return t, nil
+    return t, nil
 }
 
 func (d *DBUtils) GetObject(c ControllerObjectManager, 
@@ -64,12 +64,14 @@ func (d *DBUtils) GetObject(c ControllerObjectManager,
         return c.CreateEmptyObject(), err
     }
 
-	value, err := db.DBconn.Find(c.GetStoreName(), key, c.GetStoreMeta())
+    
+    value, err := db.DBconn.Find(c.GetStoreName(), key, c.GetStoreMeta())
     if err != nil {
         return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Get Resource")
     }
 
-	if value != nil {
+    
+    if value != nil {
         r := c.CreateEmptyObject()
         err = db.DBconn.Unmarshal(value[0], r)
         if err != nil {
@@ -78,23 +80,26 @@ func (d *DBUtils) GetObject(c ControllerObjectManager,
         return r, nil
     }
 
-	return c.CreateEmptyObject(), pkgerrors.New("No Object")
+    return c.CreateEmptyObject(), pkgerrors.New("No Object")
 }
 
 func (d *DBUtils) GetObjects(c ControllerObjectManager,
     m map[string]string) ([]module.ControllerObject, error) {
-	
+    
+        
     key, err := c.GetStoreKey(m, c.CreateEmptyObject(), true)
     if err != nil {
         return []module.ControllerObject{}, err
     }
 
-	values, err := db.DBconn.Find(c.GetStoreName(), key, c.GetStoreMeta())
+    
+    values, err := db.DBconn.Find(c.GetStoreName(), key, c.GetStoreMeta())
     if err != nil {
         return []module.ControllerObject{}, pkgerrors.Wrap(err, "Get Overlay Objects")
     }
 
-	var resp []module.ControllerObject
+    
+    var resp []module.ControllerObject
     for _, value := range values {
         t := c.CreateEmptyObject()
         err = db.DBconn.Unmarshal(value, t)

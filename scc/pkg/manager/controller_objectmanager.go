@@ -17,34 +17,34 @@
 package manager
 
 import (
-	"io"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
-	"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "io"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
 )
 
 // ControllerManager is an interface exposes the ControllerObject functionality
 type ControllerObjectManager interface {
-	GetStoreName() string
-	GetStoreMeta() string
-	GetDepResManagers() []ControllerObjectManager
-	AddDepResManager(mgr ControllerObjectManager)
-	GetOwnResManagers() []ControllerObjectManager
-	AddOwnResManager(mgr ControllerObjectManager) 
-
-	IsOperationSupported(oper string) bool
-	GetStoreKey(m map[string]string, t module.ControllerObject, isCollection bool) (db.Key, error)
-	CreateEmptyObject() module.ControllerObject
-	ParseObject(r io.Reader) (module.ControllerObject, error)
-	CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error)
-	GetObject(m map[string]string) (module.ControllerObject, error)
-	GetObjects(m map[string]string) ([]module.ControllerObject, error)
-	UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error)
-	DeleteObject(m map[string]string) error
+    GetStoreName() string
+    GetStoreMeta() string
+    GetDepResManagers() []ControllerObjectManager
+    AddDepResManager(mgr ControllerObjectManager)
+    GetOwnResManagers() []ControllerObjectManager
+    AddOwnResManager(mgr ControllerObjectManager) 
+    
+    IsOperationSupported(oper string) bool
+    GetStoreKey(m map[string]string, t module.ControllerObject, isCollection bool) (db.Key, error)
+    CreateEmptyObject() module.ControllerObject
+    ParseObject(r io.Reader) (module.ControllerObject, error)
+    CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error)
+    GetObject(m map[string]string) (module.ControllerObject, error)
+    GetObjects(m map[string]string) ([]module.ControllerObject, error)
+    UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error)
+    DeleteObject(m map[string]string) error
 }
 
 type BaseObjectManager struct {
-	storeName           string
-	tagMeta				string
+    storeName           string
+    tagMeta             string
     depResManagers      []ControllerObjectManager
     ownResManagers      []ControllerObjectManager
 }
