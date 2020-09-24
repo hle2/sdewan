@@ -82,7 +82,7 @@ func (c *KubeConfigUtil) toYaml(data *unstructured.Unstructured) (string, error)
     return string(byte_yaml), nil
 }
 
-func (c *KubeConfigUtil) UpdateK8sConfig(conf string, server string) (string, error) {
+func (c *KubeConfigUtil) UpdateK8sConfig(conf string, server string, insecure bool) (string, error) {
     conf_us_obj := &unstructured.Unstructured{}
     _, err := DecodeYAMLFromData(conf, conf_us_obj)
     if err == nil {
@@ -91,10 +91,13 @@ func (c *KubeConfigUtil) UpdateK8sConfig(conf string, server string) (string, er
         if err == nil {
             if len(cluster_objs) > 0 {
                 cluster_obj := cluster_objs[0].(map[string]interface{})
-                // remove certificate-authority-data
-                unstructured.RemoveNestedField(cluster_obj, "cluster", "certificate-authority-data")
-                // add insecure-skip-tls-verify
-                err = unstructured.SetNestedField(cluster_obj, true, "cluster", "insecure-skip-tls-verify")
+                if insecure {
+                    // remove certificate-authority-data
+                    unstructured.RemoveNestedField(cluster_obj, "cluster", "certificate-authority-data")
+                    // add insecure-skip-tls-verify
+                    err = unstructured.SetNestedField(cluster_obj, true, "cluster", "insecure-skip-tls-verify")
+                }
+
                 if err == nil {
                     // set server
                     err = unstructured.SetNestedField(cluster_obj, server, "cluster", "server")

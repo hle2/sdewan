@@ -21,6 +21,8 @@ import (
     "log"
     "context"
     "time"
+    "io/ioutil"
+    "strconv"
 
     cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,23 +37,33 @@ import (
     certmanagerversioned "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
     certmanagerv1beta1 "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1beta1"
     v1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
+    pkgerrors "github.com/pkg/errors"
 )
 
 type KubernetesClient struct {
     Context string
-    KubeConfig string
+    ConfigPath string
+    KubeConfig  []byte
 }
 
-func NewClient(context string, kubeConfig string) *KubernetesClient {
+func NewClient(context string, configPath string, kubeConfig []byte) *KubernetesClient {
     return &KubernetesClient{
         Context: context,
+        ConfigPath: configPath,
         KubeConfig: kubeConfig,
     }
 }
 
 func (c *KubernetesClient) ToRESTConfig() (*rest.Config, error) {
-    // From: k8s.io/kubectl/pkg/cmd/util/kubectl_match_version.go > func setKubernetesDefaults()
-    config, err := c.ToRawKubeConfigLoader().ClientConfig()
+    var config *rest.Config
+    var err error
+    if len(c.KubeConfig) == 0 {
+        // From: k8s.io/kubectl/pkg/cmd/util/kubectl_match_version.go > func setKubernetesDefaults()
+        config, err = c.toRawKubeConfigLoader().ClientConfig()
+    } else {
+        config, err = clientcmd.RESTConfigFromKubeConfig(c.KubeConfig)
+    }
+
     if err != nil {
         return nil, err
     }
@@ -73,17 +85,17 @@ func (c *KubernetesClient) ToRESTConfig() (*rest.Config, error) {
     return config, nil
 }
 
-// ToRawKubeConfigLoader creates a client using the following rules:
+// toRawKubeConfigLoader creates a client using the following rules:
 // 1. builds from the given kubeconfig path, if not empty
 // 2. use the in cluster factory if running in-cluster
 // 3. gets the factory from KUBECONFIG env var
 // 4. Uses $HOME/.kube/factory
 // It's required to implement the interface genericclioptions.RESTClientGetter
-func (c *KubernetesClient) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+func (c *KubernetesClient) toRawKubeConfigLoader() clientcmd.ClientConfig {
     loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
     loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-    if len(c.KubeConfig) != 0 {
-        loadingRules.ExplicitPath = c.KubeConfig
+    if len(c.ConfigPath) != 0 {
+        loadingRules.ExplicitPath = c.ConfigPath
     }
     configOverrides := &clientcmd.ConfigOverrides{
         ClusterDefaults: clientcmd.ClusterDefaults,
@@ -114,6 +126,31 @@ func (c *KubernetesClient) GetCMClients() (certmanagerv1beta1.CertmanagerV1beta1
     return cmclientset.CertmanagerV1beta1(), k8sclientset.CoreV1(), nil
 }
 
+func (c *KubernetesClient) KubernetesClientSet() (*kubernetes.Clientset, error) {
+    config, err := c.ToRESTConfig()
+    if err != nil {
+        return nil, err
+    }
+
+    return kubernetes.NewForConfig(config)
+}
+
+func (c *KubernetesClient) IsReachable() bool {
+    clientset, err := c.KubernetesClientSet()
+    if err != nil {
+        log.Println(err)
+        return false
+    }
+
+    _, err = clientset.ServerVersion()
+    if err != nil {
+        log.Println(err)
+        return false
+    }
+
+    return true
+}
+
 type CertUtil struct {
     client certmanagerv1beta1.CertmanagerV1beta1Interface
     k8sclient corev1.CoreV1Interface
@@ -124,8 +161,7 @@ var certutil = CertUtil{}
 func GetCertUtil() (*CertUtil, error) {
     var err error
     if certutil.client == nil || certutil.k8sclient == nil {
-//        certutil.client = client.NewClient("", "")
-        certutil.client, certutil.k8sclient, err = NewClient("", "").GetCMClients()
+        certutil.client, certutil.k8sclient, err = NewClient("", "", []byte{}).GetCMClients()
     }
 
     return &certutil, err
@@ -133,23 +169,14 @@ func GetCertUtil() (*CertUtil, error) {
 
 func (c *CertUtil) CreateNamespace(name string) (*v1.Namespace, error) {
     ns, err := c.k8sclient.Namespaces().Get(context.TODO(), name, metav1.GetOptions{})
-    
-        if err == nil {
-    
-            
+    if err == nil {
         return ns, nil
-    
-        }
+    }
 
     log.Println("Create Namespace: " + name)
     return c.k8sclient.Namespaces().Create(context.TODO(), &v1.Namespace{
         ObjectMeta: metav1.ObjectMeta{
-    
-            
-            
-        Name: name,
-    
-            
+            Name: name,
         },
     }, metav1.CreateOptions{})
 }
@@ -174,40 +201,16 @@ func (c *CertUtil) CreateSelfSignedIssuer(name string, namespace string) (*v1bet
 
     // Not existing issuer, create a new one
     return c.client.Issuers(namespace).Create(context.TODO(), &v1beta1.Issuer{
-    
-            
         ObjectMeta: metav1.ObjectMeta{
-    
-            
-            
-        Name: name,
-    
-            
+            Name: name,
         },
-    
-            
         Spec: v1beta1.IssuerSpec{
-    
-            
-            
-        IssuerConfig: v1beta1.IssuerConfig{
-    
-            
-            
-            
-        SelfSigned: &v1beta1.SelfSignedIssuer{
-    
-            
-            
-            
+            IssuerConfig: v1beta1.IssuerConfig{
+                SelfSigned: &v1beta1.SelfSignedIssuer{
+                },
+            },
         },
-    
-            
-            
-        },
-        },
-    
-        }, metav1.CreateOptions{})
+    }, metav1.CreateOptions{})
 }
 
 func (c *CertUtil) CreateCAIssuer(name string, namespace string, caname string) (*v1beta1.Issuer, error) {
@@ -218,41 +221,17 @@ func (c *CertUtil) CreateCAIssuer(name string, namespace string, caname string) 
 
     // Not existing issuer, create a new one
     return c.client.Issuers(namespace).Create(context.TODO(), &v1beta1.Issuer{
-    
-            
         ObjectMeta: metav1.ObjectMeta{
-    
-            
-            
-        Name: name,
-    
-            
+            Name: name,
         },
-    
-            
         Spec: v1beta1.IssuerSpec{
-    
-            
-            
-        IssuerConfig: v1beta1.IssuerConfig{
-    
-            
-            
-            
-        CA: &v1beta1.CAIssuer{
+            IssuerConfig: v1beta1.IssuerConfig{
+                CA: &v1beta1.CAIssuer{
                     SecretName: c.GetCertSecretName(caname),
-    
-            
-            
-            
+                },
+            },
         },
-    
-            
-            
-        },
-        },
-    
-        }, metav1.CreateOptions{})
+    }, metav1.CreateOptions{})
 }
 
 func (c *CertUtil) GetCertSecretName(name string) string {
@@ -275,19 +254,10 @@ func (c *CertUtil) CreateCertificate(name string, namespace string, issuer strin
 
     // Not existing cert, create a new one
     // Todo: add Duration, RenewBefore, DNSNames
-    return c.client.Certificates(namespace).Create(context.TODO(), &v1beta1.Certificate{
-    
-            
+    cert, err = c.client.Certificates(namespace).Create(context.TODO(), &v1beta1.Certificate{
         ObjectMeta: metav1.ObjectMeta{
-    
-            
-            
-        Name: name,
-    
-            
+            Name: name,
         },
-    
-            
         Spec: v1beta1.CertificateSpec{
             CommonName: name,
             // Duration: duration,
@@ -300,38 +270,29 @@ func (c *CertUtil) CreateCertificate(name string, namespace string, issuer strin
             },
             IsCA: isCA,
         },
-    
-        }, metav1.CreateOptions{})
+    }, metav1.CreateOptions{})
+
+    if err == nil {
+        if c.IsCertReady(name, namespace) {
+            return cert, nil
+        } else {
+            return cert, pkgerrors.New("Failed to get certificate " + name)
+        }
+    }
+
+    return cert, err
 }
 
 func (c *CertUtil) IsCertReady(name string, namespace string) bool {
     err := wait.PollImmediate(time.Second, time.Second*20,
-    
-            
         func() (bool, error) {
-    
-            
-            
-        var err error
+            var err error
             var crt *v1beta1.Certificate
-    
-            
-            
-        crt, err = c.GetCertificate(name, namespace)
-    
-            
-            
-        if err != nil {
-    
-            
-            
-            
-        log.Println("Failed to find certificate " + name + ": " + err.Error())
+            crt, err = c.GetCertificate(name, namespace)
+            if err != nil {
+                log.Println("Failed to find certificate " + name + ": " + err.Error())
                 return false, err
-    
-            
-            
-        }
+            }
             curConditions := crt.Status.Conditions
             for _, cond := range curConditions {
                 if v1beta1.CertificateConditionReady == cond.Type && cmmeta.ConditionTrue == cond.Status {
@@ -339,15 +300,9 @@ func (c *CertUtil) IsCertReady(name string, namespace string) bool {
                 }
             }
             log.Println("Waiting for Certificate " + name + " to be ready.")
-    
-            
-            
-        return false, nil
-    
-            
+            return false, nil
         },
-    
-        )
+    )
 
     if err != nil {
         log.Println(err)
@@ -358,11 +313,7 @@ func (c *CertUtil) IsCertReady(name string, namespace string) bool {
 }
 
 func (c *CertUtil) GetKeypair(certname string, namespace string) (string, string, error) {
-    if c.IsCertReady(certname, namespace) == false {
-        return "", "", nil
-    }
-
-    secret, err ：= c.k8sclient.Secrets(namespace).Get(
+    secret, err := c.k8sclient.Secrets(namespace).Get(
         context.TODO(),
         c.GetCertSecretName(certname),
         metav1.GetOptions{})
@@ -374,7 +325,7 @@ func (c *CertUtil) GetKeypair(certname string, namespace string) (string, string
     return string(secret.Data["tls.crt"]), string(secret.Data["tls.key"]), nil
 }
 
-func main() {
+func testCert() {
     cu, err := GetCertUtil()
     if err != nil {
         log.Println(err)
@@ -443,4 +394,18 @@ func main() {
     cu.DeleteCertificate("my-root-cert", "my-system")
     cu.DeleteIssuer("my-root-issuer", "my-system")
     cu.DeleteNamespace("my-system")
+}
+
+func testClient() {
+    conf_bytes, err := ioutil.ReadFile("./admin.conf")
+    if err != nil {
+        log.Println(err)
+    }
+
+    kclient := NewClient("", "", conf_bytes)
+    log.Println("Is Reachable: " + strconv.FormatBool(kclient.IsReachable()))
+}
+
+func main() {
+    testClient()
 }

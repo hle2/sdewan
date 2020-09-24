@@ -41,7 +41,7 @@ var certutil = CertUtil{}
 func GetCertUtil() (*CertUtil, error) {
     var err error
     if certutil.client == nil || certutil.k8sclient == nil {
-        certutil.client, certutil.k8sclient, err = kclient.NewClient("", "").GetCMClients()
+        certutil.client, certutil.k8sclient, err = kclient.NewClient("", "", []byte{}).GetCMClients()
     }
 
     return &certutil, err

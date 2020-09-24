@@ -18,6 +18,7 @@
 package client
 
 import (
+    "log"
     "k8s.io/client-go/rest"
     "k8s.io/client-go/tools/clientcmd"
     "k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,19 +31,28 @@ import (
 
 type KubernetesClient struct {
     Context string
-    KubeConfig string
+    ConfigPath string
+    KubeConfig  []byte
 }
 
-func NewClient(context string, kubeConfig string) *KubernetesClient {
+func NewClient(context string, configPath string, kubeConfig []byte) *KubernetesClient {
     return &KubernetesClient{
         Context: context,
+        ConfigPath: configPath,
         KubeConfig: kubeConfig,
     }
 }
 
 func (c *KubernetesClient) ToRESTConfig() (*rest.Config, error) {
-    // From: k8s.io/kubectl/pkg/cmd/util/kubectl_match_version.go > func setKubernetesDefaults()
-    config, err := c.ToRawKubeConfigLoader().ClientConfig()
+    var config *rest.Config
+    var err error
+    if len(c.KubeConfig) == 0 {
+        // From: k8s.io/kubectl/pkg/cmd/util/kubectl_match_version.go > func setKubernetesDefaults()
+        config, err = c.toRawKubeConfigLoader().ClientConfig()
+    } else {
+        config, err = clientcmd.RESTConfigFromKubeConfig(c.KubeConfig)
+    }
+
     if err != nil {
         return nil, err
     }
@@ -64,17 +74,17 @@ func (c *KubernetesClient) ToRESTConfig() (*rest.Config, error) {
     return config, nil
 }
 
-// ToRawKubeConfigLoader creates a client using the following rules:
+// toRawKubeConfigLoader creates a client using the following rules:
 // 1. builds from the given kubeconfig path, if not empty
 // 2. use the in cluster factory if running in-cluster
 // 3. gets the factory from KUBECONFIG env var
 // 4. Uses $HOME/.kube/factory
 // It's required to implement the interface genericclioptions.RESTClientGetter
-func (c *KubernetesClient) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+func (c *KubernetesClient) toRawKubeConfigLoader() clientcmd.ClientConfig {
     loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
     loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-    if len(c.KubeConfig) != 0 {
-        loadingRules.ExplicitPath = c.KubeConfig
+    if len(c.ConfigPath) != 0 {
+        loadingRules.ExplicitPath = c.ConfigPath
     }
     configOverrides := &clientcmd.ConfigOverrides{
         ClusterDefaults: clientcmd.ClusterDefaults,
@@ -103,4 +113,29 @@ func (c *KubernetesClient) GetCMClients() (certmanagerv1beta1.CertmanagerV1beta1
     }
 
     return cmclientset.CertmanagerV1beta1(), k8sclientset.CoreV1(), nil
+}
+
+func (c *KubernetesClient) KubernetesClientSet() (*kubernetes.Clientset, error) {
+    config, err := c.ToRESTConfig()
+    if err != nil {
+        return nil, err
+    }
+
+    return kubernetes.NewForConfig(config)
+}
+
+func (c *KubernetesClient) IsReachable() bool {
+    clientset, err := c.KubernetesClientSet()
+    if err != nil {
+        log.Println(err)
+        return false
+    }
+
+    _, err = clientset.ServerVersion()
+    if err != nil {
+        log.Println(err)
+        return false
+    }
+
+    return true
 }
