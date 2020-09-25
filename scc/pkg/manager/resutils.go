@@ -188,7 +188,7 @@ func (d *ResUtil) Deploy(format string) error {
         appdep := make(map[string]string)
 
         // Add application
-        app_name := device.GetMetadata().Name + "_app"
+        app_name := device.GetMetadata().Name + "-app"
         appOrderInstr.Apporder = append(appOrderInstr.Apporder, app_name)
         appdep[app_name] = "go"
 
