@@ -64,8 +64,9 @@ func (c *IpsecResource) GetType() string {
 func (c *IpsecResource) ToYaml() string {
         p := strings.Join(c.CryptoProposal, ",")
         pr := strings.Join(c.Connections.CryptoProposal, ",")
+
         if c.AuthenticationMethod == "pubkey" {
-            return `apiVersion: batch.sdewan.akraino.org/v1alpha1 
+            return `apiVersion:` + SdewanApiVersion + ` 
             kind: IpsecHost
             metadata:
               name:` +  c.Name + `
@@ -89,10 +90,9 @@ func (c *IpsecResource) ToYaml() string {
                 mode:` +  c.Connections.Mode + `
                 mark:` +  c.Connections.Mark + `
                 local_updown: /etc/updown
-                crypto_proposal:` + pr + `
-                 `
+                crypto_proposal:` + pr
         } else if c.AuthenticationMethod == "psk" {
-            return `apiVersion: batch.sdewan.akraino.org/v1alpha1 
+            return `apiVersion:` + SdewanApiVersion + ` 
             kind: IpsecHost
             metadata:
               name:` +  c.Name + `
@@ -114,8 +114,7 @@ func (c *IpsecResource) ToYaml() string {
                 mode:` + c.Connections.Mode + `
                 mark:` + c.Connections.Mark + `
                 local_updown: /etc/updown
-                crypto_proposal:` + pr + `
-                 `
+                crypto_proposal:` + pr
         } else {
                 log.Println("Unsupported authentication method.")
                 return "Error"
