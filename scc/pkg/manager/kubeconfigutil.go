@@ -139,7 +139,7 @@ func (c *KubeConfigUtil)checkKubeConfigAvail(conf []byte, ips []string, port str
                 return conf, ip, nil
                 } else {
                     log.Println("No cluster available")
-                    return conf, ""，pkgerrors.New("IP doesn't exist in the kubeconfig check")
+                    return conf, "", pkgerrors.New("IP doesn't exist in the kubeconfig check")
                 }
             } else {
                 return conf, "", pkgerrors.New("Error in kubeconfig format")
