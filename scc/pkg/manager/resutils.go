@@ -159,13 +159,27 @@ func InitRsyncClient() bool {
 }
 
 // --------------------------------------------------------------------------------------------------------------
+func (d *ResUtil) contains(reses []DeployResource, res DeployResource) bool {
+    for _, r := range reses {
+        if r.Action == res.Action &&
+           r.Resource.GetName() == res.Resource.GetName() &&
+           r.Resource.GetType() == res.Resource.GetType() {
+            return true
+        }
+    }
+
+    return false
+}
 
 func (d *ResUtil) AddResource(device module.ControllerObject, action string, resource resource.ISdewanResource) error {
     if d.resmap[device] == nil {
         d.resmap[device] = &DeployResources{Resources: []DeployResource{}}
     }
 
-    d.resmap[device].Resources = append(d.resmap[device].Resources, DeployResource{Action: action, Resource: resource,})
+    ds := DeployResource{Action: action, Resource: resource,}
+    if !d.contains(d.resmap[device].Resources, ds) {
+        d.resmap[device].Resources = append(d.resmap[device].Resources, DeployResource{Action: action, Resource: resource,})
+    }
     return nil
 }
 
@@ -209,7 +223,7 @@ func (d *ResUtil) Deploy(format string) error {
         context.AddInstruction(compositeHandle, "app", "order", string(jappOrderInstr))
         context.AddInstruction(compositeHandle, "app", "dependency", string(jappDepInstr))
     }
-    
+
     // invoke deployment prrocess
     appContextID := fmt.Sprintf("%v", ctxval)
     err = rsyncclient.InvokeInstallApp(appContextID)
