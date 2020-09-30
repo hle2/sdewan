@@ -82,7 +82,7 @@ func (c *KubeConfigUtil) toYaml(data *unstructured.Unstructured) ([]byte, error)
         return []byte(""), pkgerrors.Wrap(err, "Fail to generate yaml")
     }
 
-    return string(byte_yaml), nil
+    return byte_yaml, nil
 }
 
 func (c *KubeConfigUtil) UpdateK8sConfig(conf []byte, server string, insecure bool) ([]byte, error) {

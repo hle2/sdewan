@@ -18,6 +18,7 @@ package resource
 
 import (
         "log"
+        "strings"
 )
 
 type Connection struct {
@@ -61,21 +62,8 @@ func (c *IpsecResource) GetType() string {
 }
 
 func (c *IpsecResource) ToYaml() string {
-        var p string
-        for i := 0; i < len(c.Connections.CryptoProposal); i++ {
-                if i == 0 {
-                        p = c.Connections.CryptoProposal[i]
-                }
-                p = p + ", " + c.Connections.CryptoProposal[i]
-        }
-        var pr string
-        for i := 0; i < len(c.CryptoProposal); i++ {
-                if i == 0 {
-                        pr = c.CryptoProposal[i]
-                }
-                pr = pr + ", " + c.CryptoProposal[i]
-        }
-
+        p := strings.Join(c.CryptoProposal, ",")
+        pr := strings.Join(c.Connections.CryptoProposal, ",")
         if c.AuthenticationMethod == "pubkey" {
             return `apiVersion: batch.sdewan.akraino.org/v1alpha1 
             kind: IpsecHost
@@ -94,14 +82,15 @@ func (c *IpsecResource) ToYaml() string {
               shared_ca:` + c.SharedCA + `
               local_identifier:` + c.LocalIdentifier + `
               force_crypto_proposal:` + c.ForceCryptoProposal + `
-              crypto_proposal:` + pr + `
+              crypto_proposal:` + p + `
               connections: 
               - name:` + c.Connections.Name + `
                 conn_type:` + c.Connections.ConnectionType + `
                 mode:` +  c.Connections.Mode + `
                 mark:` +  c.Connections.Mark + `
                 local_updown: /etc/updown
-                crypto_proposal:` + p + `
+                crypto_proposal:` + pr + `
+                 `
         } else if c.AuthenticationMethod == "psk" {
             return `apiVersion: batch.sdewan.akraino.org/v1alpha1 
             kind: IpsecHost
@@ -118,18 +107,17 @@ func (c *IpsecResource) ToYaml() string {
               pre_shared_key:` + c.PresharedKey + `
               local_identifier:` + c.LocalIdentifier + `
               force_crypto_proposal:` + c.ForceCryptoProposal + `
-              crypto_proposal:` + pr + `
+              crypto_proposal:` + p + `
               connections: 
               - name:` + c.Connections.Name + `
                 conn_type:` + c.Connections.ConnectionType + `
                 mode:` + c.Connections.Mode + `
                 mark:` + c.Connections.Mark + `
                 local_updown: /etc/updown
-                crypto_proposal:` + p + `
+                crypto_proposal:` + pr + `
                  `
         } else {
                 log.Println("Unsupported authentication method.")
                 return "Error"
         }
 }
-
