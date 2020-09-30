@@ -16,10 +16,12 @@
 
 package module
 
+
 // App contains metadata for Apps
 type HubObject struct {
 	Metadata ObjectMetaData `json:"metadata"`
 	Specification HubObjectSpec `json:"spec"`
+	Status HubObjectStatus `json:"-"`
 }
 
 //HubObjectSpec contains the parameters
@@ -27,6 +29,11 @@ type HubObjectSpec struct {
 	PublicIps    	[]string 	`json:"publicIps"`
 	CertificateId 	string 		`json:"certificateId"`
 	KubeConfig 		string 		`json:"kubeConfig"`
+}
+
+//HubObjectStatus
+type HubObjectStatus struct {
+        Data            map[string]string
 }
 
 func (c *HubObject) GetMetadata() ObjectMetaData {

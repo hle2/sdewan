@@ -19,6 +19,7 @@ package manager
 import (
     "io"
     "log"
+    "strings"
     "encoding/json"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
@@ -190,7 +191,14 @@ func (c *OverlayObjectManager) CreateCertificate(oname string, cname string) (st
         if err != nil {
             log.Println("Failed to create overlay[" + oname +"] certificate: " + err.Error())
         } else {
-            return cu.GetKeypair(cname, NameSpaceName)
+            crts, key, err := cu.GetKeypair(cname, NameSpaceName)
+            if err != nil {
+                log.Println(err)
+                return "", "", err
+            } else {
+                crt := strings.SplitAfter(crts, "-----END CERTIFICATE-----")[0]
+                return crt, key, nil
+            }
         }
     }
 
@@ -209,4 +217,36 @@ func (c *OverlayObjectManager) DeleteCertificate(cname string) (string, string, 
     }
 
     return "", "", nil
+}
+
+func (c *OverlayObjectManager) GetCertificate(oname string) (string, string, error) {
+        cu, err := GetCertUtil()
+        if err != nil {
+                log.Println(err)
+        } else {
+                cname := c.CertName(oname)
+                return cu.GetKeypair(cname, NameSpaceName)
+        }
+        return "", "", nil
+}
+
+func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.ControllerObject, m2 module.ControllerObject, conntype string, oname string) error {
+    proposal := GetManagerset().Proposal
+    proposals, err := proposal.GetObjects(m)
+    if len(proposals) == 0 || err != nil {
+        log.Println("Missing Proposal in the overlay\n")
+        log.Println(err)
+        return pkgerrors.New("Error in getting proposals")
+    }
+    var all_proposals []string
+    var proposalresources []resource.ProposalResource
+    for i:= 0 ; i < len(proposals); i++ {
+            all_proposals = append(all_proposals, proposals[i].(*module.ProposalObject).Metadata.Name)
+            pr := resource.ProposalResource{proposals[i].(*module.ProposalObject).Metadata.Name, proposals[i].(*module.ProposalObject).Specification.Encryption, proposals[i].(*module.ProposalObject).Specification.Hash, proposals[i].(*module.ProposalObject).Specification.DhGroup}
+            proposalresources = append(proposalresources, pr)
+    }
+
+    //var root_ca string
+    //root_ca, _, _ = c.GetCertificate(oname)
+    return nil
 }

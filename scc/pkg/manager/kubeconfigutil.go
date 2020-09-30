@@ -18,11 +18,14 @@ package manager
 
 import (
     "os"
+    "strings"
+    "log"
     "io/ioutil"
     "sigs.k8s.io/yaml"
     "k8s.io/apimachinery/pkg/runtime"
     "k8s.io/client-go/kubernetes/scheme"
     "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/client"
     pkgerrors "github.com/pkg/errors"
 )
 
@@ -49,9 +52,9 @@ func DecodeYAMLFromFile(path string, into runtime.Object) (runtime.Object, error
     return obj, nil
 }
 
-func DecodeYAMLFromData(data string, into runtime.Object) (runtime.Object, error) {
+func DecodeYAMLFromData(data []byte, into runtime.Object) (runtime.Object, error) {
     decode := scheme.Codecs.UniversalDeserializer().Decode
-    obj, _, err := decode([]byte(data), nil, into)
+    obj, _, err := decode(data, nil, into)
     if err != nil {
         return nil, pkgerrors.Wrap(err, "Deserialize YAML error")
     }
@@ -68,21 +71,21 @@ func GetKubeConfigUtil() *KubeConfigUtil {
     return &kubeutil
 }
 
-func (c *KubeConfigUtil) toYaml(data *unstructured.Unstructured) (string, error) {
+func (c *KubeConfigUtil) toYaml(data *unstructured.Unstructured) ([]byte, error) {
     byte_json, err := data.MarshalJSON()
     if err != nil {
-        return "", pkgerrors.Wrap(err, "Fail to generate yaml")
+        return []byte(""), pkgerrors.Wrap(err, "Fail to generate yaml")
     }
 
     byte_yaml, err := yaml.JSONToYAML(byte_json)
     if err != nil {
-        return "", pkgerrors.Wrap(err, "Fail to generate yaml")
+        return []byte(""), pkgerrors.Wrap(err, "Fail to generate yaml")
     }
 
     return string(byte_yaml), nil
 }
 
-func (c *KubeConfigUtil) UpdateK8sConfig(conf string, server string, insecure bool) (string, error) {
+func (c *KubeConfigUtil) UpdateK8sConfig(conf []byte, server string, insecure bool) ([]byte, error) {
     conf_us_obj := &unstructured.Unstructured{}
     _, err := DecodeYAMLFromData(conf, conf_us_obj)
     if err == nil {
@@ -109,10 +112,58 @@ func (c *KubeConfigUtil) UpdateK8sConfig(conf string, server string, insecure bo
                     }
                 }
             } else {
-                return "", pkgerrors.New("UpdateK8sConfig: No cluster")
+                return []byte(""), pkgerrors.New("UpdateK8sConfig: No cluster")
             }
         }
     }
 
-    return "", pkgerrors.Wrap(err, "UpdateK8sConfig")
+    return []byte(""), pkgerrors.Wrap(err, "UpdateK8sConfig")
+}
+
+func (c *KubeConfigUtil)checkKubeConfigAvail(conf []byte, ips []string, port string) ([]byte, string, error){
+    kubeclient := client.NewClient("", "", conf)
+    is_reachable := kubeclient.IsReachable()
+    if is_reachable {
+        conf_us_obj := &unstructured.Unstructured{}
+        _, err := DecodeYAMLFromData(conf, conf_us_obj)
+        if err == nil {
+            conf_obj := conf_us_obj.UnstructuredContent()
+            cluster_objs, _, err := unstructured.NestedSlice(conf_obj, "clusters")
+            if err == nil {
+                if len(cluster_objs) > 0 {
+                cluster_obj := cluster_objs[0].(map[string]interface{})
+                // get server
+                var url interface{} = cluster_obj
+                url = url.(map[string]interface{})["server"]
+                ip := strings.Split(strings.Split(url.(string), ":")[1], "//")[1]
+                return conf, ip, nil
+                } else {
+                    log.Println("No cluster available")
+                    return conf, ""，pkgerrors.New("IP doesn't exist in the kubeconfig check")
+                }
+            } else {
+                return conf, "", pkgerrors.New("Error in kubeconfig format")
+            }
+           
+        } else {
+            return conf, "", pkgerrors.New("Error in kubeconfig format")
+        }
+    } else {
+        for i := 0 ; i < len(ips); i++ {
+            ip := ips[i]
+            //UpdateConfig
+            new_url := "https://" + ips[i] + ":" + port
+            conf, err := kubeutil.UpdateK8sConfig(conf, new_url, false)
+            if err != nil {
+                    log.Println(err)
+                    return []byte(""), "", pkgerrors.New("Error in updating kubeconfig")
+            }
+            kubeclient = client.NewClient("", "", []byte(conf))
+            is_reachable = kubeclient.IsReachable()
+            if is_reachable == true {
+                    return conf, ip, nil
+            }
+        }
+        return []byte(""), "", pkgerrors.New("No public ip found workable for the cluster")
+    }
 }
