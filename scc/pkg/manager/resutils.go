@@ -178,7 +178,7 @@ func (d *ResUtil) AddResource(device module.ControllerObject, action string, res
 
     ds := DeployResource{Action: action, Resource: resource,}
     if !d.contains(d.resmap[device].Resources, ds) {
-        d.resmap[device].Resources = append(d.resmap[device].Resources, DeployResource{Action: action, Resource: resource,})
+        d.resmap[device].Resources = append(d.resmap[device].Resources, ds)
     }
     return nil
 }
