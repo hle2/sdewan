@@ -27,6 +27,15 @@ import (
     pkgerrors "github.com/pkg/errors"
 )
 
+const DEFAULT_MARK = "30"
+const VTI_MODE = "VTI-based"
+const PUBKEY_AUTH = "pubkey"
+const FORCECRYPTOPROPOSAL = "0"
+const DEFAULT_CONN = "Connection"
+const CONN_TYPE = "tunnel"
+const MODE = "start"
+const OVERLAYIP ="overlayip"
+
 type OverlayObjectKey struct {
     OverlayName string `json:"overlay-name"`
 }
@@ -230,7 +239,10 @@ func (c *OverlayObjectManager) GetCertificate(oname string) (string, string, err
         return "", "", nil
 }
 
-func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.ControllerObject, m2 module.ControllerObject, conntype string, oname string) error {
+//Set up Connection between objects
+//Passing the original map resource, the two objects, connection type("hub-to-hub", "hub-to-device", "device-to-device") and namespace name.
+func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.ControllerObject, m2 module.ControllerObject, conntype string, namespace string) error {
+    //Get all proposals available in the overlay
     proposal := GetManagerset().Proposal
     proposals, err := proposal.GetObjects(m)
     if len(proposals) == 0 || err != nil {
@@ -246,7 +258,154 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             proposalresources = append(proposalresources, pr)
     }
 
-    //var root_ca string
-    //root_ca, _, _ = c.GetCertificate(oname)
+    //Get the overlay cert
+    var root_ca string
+    root_ca, _, _ = c.GetCertificate(m[OverlayResource])
+
+    var Obj1 module.ControllerObject
+    var Obj2 module.ControllerObject
+    var obj1_ipsec_resource resource.IpsecResource
+    var obj2_ipsec_resource resource.IpsecResource
+
+    switch conntype {
+    case "hub-to-hub":
+        obj1 := m1.(*module.HubObject)
+        obj2 := m2.(*module.HubObject)
+
+        obj1_ip := obj1.Status.Data[PUBLICIP]
+        obj2_ip := obj2.Status.Data[PUBLICIP]
+
+        Obj1 = obj1
+        Obj2 = obj2
+
+        //Keypair
+        obj1_crt, obj1_key, err := GetHubCertificate(obj1.GetCertName(),namespace)
+        if err != nil {
+            log.Println(err)
+        }
+        obj2_crt, obj2_key, err := GetHubCertificate(obj2.GetCertName(),namespace)
+        if err != nil {
+            log.Println(err)
+        }
+
+        //IpsecResources
+        conn := resource.Connection{
+            Name: DEFAULT_CONN,
+            ConnectionType: CONN_TYPE,
+            Mode: MODE,
+            Mark: DEFAULT_MARK,
+            CryptoProposal: all_proposals,
+        }
+        obj1_ipsec_resource = resource.IpsecResource{
+            Name: obj1.Metadata.Name + obj2.Metadata.Name + "Conn",
+            Type: VTI_MODE,
+            Remote: obj2_ip,
+            AuthenticationMethod: PUBKEY_AUTH,
+            PublicCert: obj2_crt,
+            PrivateCert: obj2_key,
+            SharedCA: root_ca,
+            LocalIdentifier: obj1_ip,
+            CryptoProposal: all_proposals,
+            ForceCryptoProposal: FORCECRYPTOPROPOSAL,
+            Connections: conn,
+        }
+        obj2_ipsec_resource = resource.IpsecResource{
+            Name: obj2.Metadata.Name + obj1.Metadata.Name + "Conn",
+            Type: VTI_MODE,
+            Remote: obj1_ip,
+            AuthenticationMethod: PUBKEY_AUTH,
+            PublicCert: obj1_crt,
+            PrivateCert: obj1_key,
+            SharedCA: root_ca,
+            LocalIdentifier: obj2_ip,
+            CryptoProposal: all_proposals,
+            ForceCryptoProposal: FORCECRYPTOPROPOSAL,
+            Connections: conn,
+        }
+    // Todo: Hub-to-device connection
+    case "hub-to-device":
+    /*    obj1 := m1.(*module.HubOject)
+        obj2 := m2.(*module.DeviceOject)
+
+        obj1_ip := obj1.Status.Data[PUBLICIP]
+        obj2_ip := obj2.Status.Data[OVERLAYIP]
+
+        //Keypair
+        obj1_crt, obj1_key, err := obj1.GetCertificate(namespace)
+        if err != nil {
+            log.Println(err)
+        }
+        obj2_crt, obj2_key, err := obj2.GetCertificate(namespace)
+        if err != nil {
+            log.Println(err)
+        }
+
+        //IpsecResources
+        obj1_conn := resource.Connection{
+            Name: DEFAULT_CONN,
+            ConnectionType: CONN_TYPE,
+            Mode: MODE,
+            Mark: DEFAULT_MARK,
+            RemoteSourceIp: 
+            CryptoProposal: all_proposals,
+        }
+        obj2_conn := resource.Connection{
+            Name: DEFAULT_CONN,
+            ConnectionType: CONN_TYPE,
+            Mode: MODE,
+            Mark: DEFAULT_MARK,
+            LocalSourceIp: "%config" //Need to use const
+            CryptoProposal: all_proposals,
+        }
+        obj1_ipsec_resource := resource.IpsecResource{
+            Name: obj1.Metadata.Name + obj2.Metadata.Name + "Conn",
+            Type: VTI_MODE,
+            Remote: obj2_ip,
+            AuthenticationMethod: PUBKEY_AUTH,
+            PublicCert: obj2_crt,
+            PrivateCert: obj2_key,
+            SharedCA: root_ca,
+            LocalIdentifier: obj1_ip,
+            CryptoProposal: all_proposals,
+            ForceCryptoProposal: FORCECRYPTOPROPOSAL,
+            Connections: conn,
+        }
+        obj2_ipsec_resource := resource.IpsecResource{
+            Name: obj2.Metadata.Name + obj1.Metadata.Name + "Conn",
+            Type: VTI_MODE,
+            Remote: obj1_ip,
+            AuthenticationMethod: PUBKEY_AUTH,
+            PublicCert: obj1_crt,
+            PrivateCert: obj1_key,
+            SharedCA: root_ca,
+            LocalIdentifier: obj2_ip,
+            CryptoProposal: all_proposals,
+            ForceCryptoProposal: FORCECRYPTOPROPOSAL,
+            Connections: conn,
+        }
+        */
+    //Todo: Device-to-device connection
+    case "device-to-device":
+    default:
+        return pkgerrors.New("Unknown connection type")
+    }
+
+    //Add resource
+    resutil := NewResUtil()
+    resutil.AddResource(Obj1, "create", &obj1_ipsec_resource)
+    resutil.AddResource(Obj2, "create", &obj2_ipsec_resource)
+    for i :=0; i < len(proposalresources); i++ {
+        resutil.AddResource(Obj1, "create", &proposalresources[i])
+        resutil.AddResource(Obj2, "create", &proposalresources[i])
+    }
+
+    //Deploy resources
+    err = resutil.Deploy("YAML")
+
+    if err != nil {
+        return pkgerrors.Wrap(err, "Unable to create the object: fail to deploy resource")
+    }
+
     return nil
+
 }

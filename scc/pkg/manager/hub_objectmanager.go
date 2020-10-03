@@ -19,7 +19,7 @@ package manager
 import (
     "io"
     "log"
-    "errors"
+    //"errors"
     "strings"
     "encoding/json"
     "encoding/base64"
@@ -27,11 +27,10 @@ import (
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
     //"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/client"
-    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"
+    //"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"
     pkgerrors "github.com/pkg/errors"
 )
 
-const default_mark = "30"
 const PUBLICIP="publicip"
 
 type HubObjectKey struct {
@@ -81,12 +80,12 @@ func (c *HubObjectManager) GetStoreKey(m map[string]string, t module.ControllerO
     if res_name != "" {
         if meta_name != "" && res_name != meta_name {
             return key, pkgerrors.New("Resource name unmatched metadata name")
-        } 
+        }
 
         key.HubName = res_name
     } else {
         if meta_name == "" {
-            return key, pkgerrors.New("Unable to find resource name")  
+            return key, pkgerrors.New("Unable to find resource name")
         }
 
         key.HubName = meta_name
@@ -132,6 +131,7 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
         log.Println(err)
     }
 
+    
     //Create cert for ipsec connection
     log.Println("Create Certificate: " + hub_name + "-cert")
     crt, key, err:= overlay.CreateCertificate(overlay_name, hub_name + "-cert")
@@ -142,6 +142,7 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
         return t, err
     }
 
+    /*
     //Todo: Get all available proposals
     proposal := GetManagerset().Proposal
     proposals, err := proposal.GetObjects(m)
@@ -154,6 +155,7 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
     for i:= 0 ; i < len(proposals); i++ {
             all_proposals = append(all_proposals, proposals[i].(*module.ProposalObject).Metadata.Name)
     }
+    */
 
 
     //Get all available hub objects
@@ -165,6 +167,11 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
 
     if len(hubs) > 0 && err == nil {
         for i := 0; i < len(hubs); i++ {
+            err := overlay.SetupConnection(m, t, hubs[i], "hub-to-hub", NameSpaceName)
+            if err != nil {
+                log.Println("Setup connection with " + hubs[i].(*module.HubObject).Metadata.Name + " failed.")
+            }    
+            /*
             remote_hub := hubs[i].(*module.HubObject)
             remote_hub_name := remote_hub.Metadata.Name
             remote_public_ip := remote_hub.Status.Data["publicip"]
@@ -239,9 +246,9 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
         if err != nil {
             return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to create the object: fail to deploy resource")
         }
-
-        t, err = GetDBUtils().CreateObject(c, m, t)
+        */   
         }
+        t, err = GetDBUtils().CreateObject(c, m, t)
     } else {
 
         t, err = GetDBUtils().CreateObject(c, m, t)
@@ -279,7 +286,28 @@ func (c *HubObjectManager) DeleteObject(m map[string]string) error {
     overlay.DeleteCertificate(hub_name + "-cert")
         // DB Operation
     err := GetDBUtils().DeleteObject(c, m)
-
     return err
 
+}
+
+func GetHubCertificate(cert_name string, namespace string)(string, string, error){
+    cu, err := GetCertUtil()
+    if err != nil {
+        log.Println(err)
+        return "", "", err
+    } else {
+        ready := cu.IsCertReady(cert_name, namespace)
+        if ready != true {
+            log.Println("Cert for hub is not ready")
+            return "", "", pkgerrors.New("Cert for hub is not ready")
+        } else {
+            crts, key, err := cu.GetKeypair(cert_name, namespace)
+            crt := strings.SplitAfter(crts, "-----END CERTIFICATE-----")[0]
+            if err != nil {
+                log.Println(err)
+                return "", "", err
+            }
+            return crt, key, nil
+        }
+    }
 }

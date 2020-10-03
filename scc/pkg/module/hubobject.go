@@ -39,3 +39,8 @@ type HubObjectStatus struct {
 func (c *HubObject) GetMetadata() ObjectMetaData {
 	return c.Metadata
 }
+
+
+func (c *HubObject) GetCertName() string {
+    return c.Metadata.Name + "cert"
+}

@@ -67,54 +67,54 @@ func (c *IpsecResource) ToYaml() string {
 
         if c.AuthenticationMethod == "pubkey" {
             return `apiVersion:` + SdewanApiVersion + ` 
-            kind: IpsecHost
-            metadata:
-              name:` +  c.Name + `
-              namespace: default
-              labels:
-                sdewanPurpose:` + c.Name + `
-            spec:
-              name:` + c.Name + `
-              type:` + c.Type + `
-              remote:` + c.Remote + `
-              authentication_method: `+ c.AuthenticationMethod +`
-              local_public_cert:` + c.PublicCert + `
-              local_private_cert:` + c.PrivateCert + `
-              shared_ca:` + c.SharedCA + `
-              local_identifier:` + c.LocalIdentifier + `
-              force_crypto_proposal:` + c.ForceCryptoProposal + `
-              crypto_proposal:` + p + `
-              connections: 
-              - name:` + c.Connections.Name + `
-                conn_type:` + c.Connections.ConnectionType + `
-                mode:` +  c.Connections.Mode + `
-                mark:` +  c.Connections.Mark + `
-                local_updown: /etc/updown
-                crypto_proposal:` + pr
+kind: IpsecHost
+metadata:
+  name:` +  c.Name + `
+  namespace: default
+  labels:
+    sdewanPurpose:` + c.Name + `
+spec:
+  name:` + c.Name + `
+  type:` + c.Type + `
+  remote:` + c.Remote + `
+  authentication_method: `+ c.AuthenticationMethod +`
+  local_public_cert:` + c.PublicCert + `
+  local_private_cert:` + c.PrivateCert + `
+  shared_ca:` + c.SharedCA + `
+  local_identifier:` + c.LocalIdentifier + `
+  force_crypto_proposal:` + c.ForceCryptoProposal + `
+  crypto_proposal:` + p + `
+  connections: 
+  - name:` + c.Connections.Name + `
+    conn_type:` + c.Connections.ConnectionType + `
+    mode:` +  c.Connections.Mode + `
+    mark:` +  c.Connections.Mark + `
+    local_updown:` + c.Connections.LocalUpDown + `
+    crypto_proposal:` + pr
         } else if c.AuthenticationMethod == "psk" {
             return `apiVersion:` + SdewanApiVersion + ` 
-            kind: IpsecHost
-            metadata:
-              name:` +  c.Name + `
-              namespace: default
-                labels:
-                  sdewanPurpose:` + c.Name + `
-            spec:
-              name:` + c.Name + `
-              type:` + c.Type + `
-              remote:` + c.Remote + `
-              authentication_method:` + c.AuthenticationMethod + `
-              pre_shared_key:` + c.PresharedKey + `
-              local_identifier:` + c.LocalIdentifier + `
-              force_crypto_proposal:` + c.ForceCryptoProposal + `
-              crypto_proposal:` + p + `
-              connections: 
-              - name:` + c.Connections.Name + `
-                conn_type:` + c.Connections.ConnectionType + `
-                mode:` + c.Connections.Mode + `
-                mark:` + c.Connections.Mark + `
-                local_updown: /etc/updown
-                crypto_proposal:` + pr
+kind: IpsecHost
+metadata:
+  name:` +  c.Name + `
+  namespace: default
+  labels:
+    sdewanPurpose:` + c.Name + `
+spec:
+  name:` + c.Name + `
+  type:` + c.Type + `
+  remote:` + c.Remote + `
+  authentication_method:` + c.AuthenticationMethod + `
+  pre_shared_key:` + c.PresharedKey + `
+  local_identifier:` + c.LocalIdentifier + `
+  force_crypto_proposal:` + c.ForceCryptoProposal + `
+  crypto_proposal:` + p + `
+  connections: 
+  - name:` + c.Connections.Name + `
+    conn_type:` + c.Connections.ConnectionType + `
+    mode:` + c.Connections.Mode + `
+    mark:` + c.Connections.Mark + `
+    local_updown:` + c.Connections.LocalUpDown + `
+    crypto_proposal:` + pr
         } else {
                 log.Println("Unsupported authentication method.")
                 return "Error"
