@@ -23,12 +23,10 @@ import (
     "time"
 
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/api"
-    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/auth"
-    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/config"
-    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/auth"
+    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/config"
+    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/manager"
-    tmpdb "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
-//    contextDb "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/contextdb"
     contextDb "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/contextdb"
     "github.com/gorilla/handlers"
 )
@@ -38,7 +36,6 @@ func main() {
     rand.Seed(time.Now().UnixNano())
 
     // create database and context database
-    tmpdb.InitializeDatabaseConnection("scc")
     err := db.InitializeDatabaseConnection("scc")
     if err != nil {
             log.Println("Unable to initialize database connection...")

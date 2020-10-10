@@ -19,7 +19,7 @@ package manager
 import (
     "io"
     "encoding/json"
-    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/validation"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
     "github.com/go-playground/validator/v10"

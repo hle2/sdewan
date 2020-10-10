@@ -21,7 +21,7 @@ import (
     "encoding/json"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/validation"
     "github.com/go-playground/validator/v10"
-    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/db"
+    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
     pkgerrors "github.com/pkg/errors"
 )
@@ -113,7 +113,7 @@ func (c *IPRangeObjectManager) ParseObject(r io.Reader) (module.ControllerObject
     for i:=0; i<32; i++ {
         v.Status.Masks[i] = 0
     }
-    v.Status.Data = make(map[int]string)
+    v.Status.Data = make(map[string]string)
     return &v, err
 }
 

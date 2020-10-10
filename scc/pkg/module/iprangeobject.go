@@ -39,7 +39,7 @@ type IPRangeObjectSpec struct {
 
 type IPRangeObjectStatus struct {
 	Masks       [32]byte
-	Data        map[int]string
+	Data        map[string]string
 }
 
 func (c *IPRangeObject) GetMetadata() ObjectMetaData {
@@ -78,7 +78,7 @@ func (c *IPRangeObject) Allocate(name string) (string, error) {
     for i <= c.Specification.MaxIp {
         if c.Status.Masks[index] & b == 0 {
             c.Status.Masks[index] |= b
-            c.Status.Data[i] = name
+            c.Status.Data[strconv.Itoa(i)] = name
             return c.base() + strconv.Itoa(i), nil
         }
         if (i % 8 == 0) {
@@ -122,16 +122,17 @@ func (c *IPRangeObject) Free(sip string) error {
         return pkgerrors.New("ip is not allocated")
     }
 
-    delete(c.Status.Data, ip)
+    delete(c.Status.Data, strconv.Itoa(ip))
     c.Status.Masks[index] &= (^b)
     return nil
 }
 
 func (c *IPRangeObject) FreeAll() error {
-    for ip, _ := range c.Status.Data {
+    for sip, _ := range c.Status.Data {
+        ip, _ := strconv.Atoi(sip)
 	    index := (ip-1)/8
 	    b := byte(math.Exp2(float64(7-(ip-1)%8)))
-	    delete(c.Status.Data, ip)
+	    delete(c.Status.Data, sip)
 	    c.Status.Masks[index] &= (^b)
 	}
     return nil
