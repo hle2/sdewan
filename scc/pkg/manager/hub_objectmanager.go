@@ -31,7 +31,8 @@ import (
     pkgerrors "github.com/pkg/errors"
 )
 
-const PUBLICIP="publicip"
+const PUBLICIP = "publicip"
+const HUBTOHUB = "hub-to-hub"
 
 type HubObjectKey struct {
     OverlayName string `json:"overlay-name"`
@@ -167,7 +168,7 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
 
     if len(hubs) > 0 && err == nil {
         for i := 0; i < len(hubs); i++ {
-            err := overlay.SetupConnection(m, t, hubs[i], "hub-to-hub", NameSpaceName)
+            err := overlay.SetupConnection(m, t, hubs[i], HUBTOHUB, NameSpaceName)
             if err != nil {
                 log.Println("Setup connection with " + hubs[i].(*module.HubObject).Metadata.Name + " failed.")
             }    

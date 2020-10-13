@@ -34,7 +34,10 @@ const FORCECRYPTOPROPOSAL = "0"
 const DEFAULT_CONN = "Connection"
 const CONN_TYPE = "tunnel"
 const MODE = "start"
-const OVERLAYIP ="overlayip"
+const OVERLAYIP = "overlayip"
+const HUBTOHUB = "hub-to-hub"
+const HUBTODEVICE = "hub-to-device"
+const DEVICETODEVICE = "device-to-device"
 
 type OverlayObjectKey struct {
     OverlayName string `json:"overlay-name"`
@@ -268,7 +271,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
     var obj2_ipsec_resource resource.IpsecResource
 
     switch conntype {
-    case "hub-to-hub":
+    case HUBTOHUB:
         obj1 := m1.(*module.HubObject)
         obj2 := m2.(*module.HubObject)
 
@@ -323,7 +326,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             Connections: conn,
         }
     // Todo: Hub-to-device connection
-    case "hub-to-device":
+    case HUBTODEVICE:
     /*    obj1 := m1.(*module.HubOject)
         obj2 := m2.(*module.DeviceOject)
 
@@ -385,19 +388,19 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         }
         */
     //Todo: Device-to-device connection
-    case "device-to-device":
+    case DEVICETODEVICE:
     default:
         return pkgerrors.New("Unknown connection type")
     }
 
     //Add resource
     resutil := NewResUtil()
-    resutil.AddResource(Obj1, "create", &obj1_ipsec_resource)
-    resutil.AddResource(Obj2, "create", &obj2_ipsec_resource)
     for i :=0; i < len(proposalresources); i++ {
         resutil.AddResource(Obj1, "create", &proposalresources[i])
         resutil.AddResource(Obj2, "create", &proposalresources[i])
     }
+    resutil.AddResource(Obj1, "create", &obj1_ipsec_resource)
+    resutil.AddResource(Obj2, "create", &obj2_ipsec_resource)
 
     //Deploy resources
     err = resutil.Deploy("YAML")
