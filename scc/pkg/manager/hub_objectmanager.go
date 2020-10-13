@@ -32,7 +32,6 @@ import (
 )
 
 const PUBLICIP = "publicip"
-const HUBTOHUB = "hub-to-hub"
 
 type HubObjectKey struct {
     OverlayName string `json:"overlay-name"`

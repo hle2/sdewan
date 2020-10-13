@@ -133,7 +133,10 @@ func (c *KubeConfigUtil)checkKubeConfigAvail(conf []byte, ips []string, port str
                 if len(cluster_objs) > 0 {
                 cluster_obj := cluster_objs[0].(map[string]interface{})
                 // get server
-                url := unstructured.NestedString(cluster_obj, "cluster", "server")
+                url, _, err := unstructured.NestedString(cluster_obj, "cluster", "server")
+                if err != nil {
+                    log.Println(err)
+                }
                 ip := strings.Split(strings.Split(url, ":")[1], "//")[1]
                 return conf, ip, nil
                 } else {
