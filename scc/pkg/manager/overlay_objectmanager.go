@@ -36,7 +36,7 @@ const DEFAULT_CONN = "Connection"
 const DEFAULT_UPDOWN = "/etc/updown"
 const CONN_TYPE = "tunnel"
 const MODE = "start"
-const OVERLAYIP ="overlayip"
+const OVERLAYIP = "overlayip"
 const HUBTOHUB = "hub-to-hub"
 const HUBTODEVICE = "hub-to-device"
 const DEVICETODEVICE = "device-to-device"
@@ -302,7 +302,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             CryptoProposal: all_proposals,
         }
         obj1_ipsec_resource = resource.IpsecResource{
-            Name: obj1.Metadata.Name + obj2.Metadata.Name + "Conn",
+            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
             Type: VTI_MODE,
             Remote: obj2_ip,
             AuthenticationMethod: PUBKEY_AUTH,
