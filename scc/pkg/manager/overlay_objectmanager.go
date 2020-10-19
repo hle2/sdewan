@@ -21,6 +21,7 @@ import (
     "log"
     "strings"
     "encoding/json"
+    "encoding/base64"
     "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"
@@ -32,6 +33,7 @@ const VTI_MODE = "VTI-based"
 const PUBKEY_AUTH = "pubkey"
 const FORCECRYPTOPROPOSAL = "0"
 const DEFAULT_CONN = "Connection"
+const DEFAULT_UPDOWN = "/etc/updown"
 const CONN_TYPE = "tunnel"
 const MODE = "start"
 const OVERLAYIP = "overlayip"
@@ -81,12 +83,12 @@ func (c *OverlayObjectManager) GetStoreKey(m map[string]string, t module.Control
     if res_name != "" {
         if meta_name != "" && res_name != meta_name {
             return key, pkgerrors.New("Resource name unmatched metadata name")
-        } 
+        }
 
         key.OverlayName = res_name
     } else {
         if meta_name == "" {
-            return key, pkgerrors.New("Unable to find resource name")  
+            return key, pkgerrors.New("Unable to find resource name")
         }
 
         key.OverlayName = meta_name
@@ -290,36 +292,38 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         if err != nil {
             log.Println(err)
         }
-
         //IpsecResources
         conn := resource.Connection{
             Name: DEFAULT_CONN,
             ConnectionType: CONN_TYPE,
             Mode: MODE,
             Mark: DEFAULT_MARK,
+            LocalUpDown: DEFAULT_UPDOWN,
             CryptoProposal: all_proposals,
         }
         obj1_ipsec_resource = resource.IpsecResource{
-            Name: obj1.Metadata.Name + obj2.Metadata.Name + "Conn",
+            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
+            SdewanPurpose: obj1.Metadata.Name,
             Type: VTI_MODE,
             Remote: obj2_ip,
             AuthenticationMethod: PUBKEY_AUTH,
-            PublicCert: obj2_crt,
-            PrivateCert: obj2_key,
-            SharedCA: root_ca,
+            PublicCert: base64.StdEncoding.EncodeToString([]byte(obj2_crt)),
+            PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj2_key)),
+            SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
             LocalIdentifier: obj1_ip,
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: conn,
         }
         obj2_ipsec_resource = resource.IpsecResource{
-            Name: obj2.Metadata.Name + obj1.Metadata.Name + "Conn",
+            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)), 
+            SdewanPurpose: obj2.Metadata.Name,
             Type: VTI_MODE,
             Remote: obj1_ip,
             AuthenticationMethod: PUBKEY_AUTH,
-            PublicCert: obj1_crt,
-            PrivateCert: obj1_key,
-            SharedCA: root_ca,
+            PublicCert: base64.StdEncoding.EncodeToString([]byte(obj1_crt)),
+            PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj1_key)),
+            SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
             LocalIdentifier: obj2_ip,
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,

@@ -115,8 +115,6 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
             log.Println(err)
             return t, err
     }
-    log.Println(to.Specification.KubeConfig)
-    log.Println(string(config))
 
     local_public_ips := to.Specification.PublicIps
     log.Println("public ips: %+v", local_public_ips)
@@ -131,36 +129,17 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
         log.Println(err)
     }
 
-    
     //Create cert for ipsec connection
     log.Println("Create Certificate: " + hub_name + "-cert")
-    crt, key, err:= overlay.CreateCertificate(overlay_name, hub_name + "-cert")
-    log.Println("Crt: \n" + crt)
-    log.Println("Key: \n" + key)
+    _, _, err = overlay.CreateCertificate(overlay_name, hub_name + "-cert")
     if err != nil {
         log.Println(err)
         return t, err
     }
 
-    /*
-    //Todo: Get all available proposals
-    proposal := GetManagerset().Proposal
-    proposals, err := proposal.GetObjects(m)
-    if len(proposals) == 0 || err != nil {
-        log.Println("Missing Proposal in the overlay\n")
-        log.Println(err)
-        return t, errors.New("Error in getting proposals")
-    }
-    var all_proposals []string
-    for i:= 0 ; i < len(proposals); i++ {
-            all_proposals = append(all_proposals, proposals[i].(*module.ProposalObject).Metadata.Name)
-    }
-    */
-
 
     //Get all available hub objects
-    hub := GetManagerset().Hub
-    hubs, err := hub.GetObjects(m)
+    hubs, err := c.GetObjects(m)
     if err != nil {
             log.Println(err)
     }
@@ -170,83 +149,7 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
             err := overlay.SetupConnection(m, t, hubs[i], HUBTOHUB, NameSpaceName)
             if err != nil {
                 log.Println("Setup connection with " + hubs[i].(*module.HubObject).Metadata.Name + " failed.")
-            }    
-            /*
-            remote_hub := hubs[i].(*module.HubObject)
-            remote_hub_name := remote_hub.Metadata.Name
-            remote_public_ip := remote_hub.Status.Data["publicip"]
-            //Get RootCA
-            root_ca, _, _ := overlay.GetCertificate(overlay_name)
-
-            var remotecrt string
-            var remotekey string
-
-            cu, err := GetCertUtil()
-            if err != nil {
-                log.Println(err)
-            } else {
-                ready := cu.IsCertReady(remote_hub_name + "-cert", NameSpaceName)
-                if ready != true {
-                    log.Println("Cert for remote hub is not ready")
-                } else {
-                    remotecrts, remotekey, err := cu.GetKeypair(remote_hub_name + "-cert", NameSpaceName)
-                    remotecrt = strings.SplitAfter(remotecrts, "-----END CERTIFICATE-----")[0]
-                    log.Println("Remote crt" + remotecrt)
-                    log.Println("Remote key" + remotekey)
-                    if err != nil {
-                        log.Println(err)
-                    }
-                }
-        }
-
-
-        conn := resource.Connection{
-            Name: "hubConn",
-            ConnectionType: "tunnel",
-            Mode: "start",
-            Mark: default_mark,
-            CryptoProposal: all_proposals,
-        }
-
-        ipsec_resource_local := resource.IpsecResource{
-            Name: hub_name,
-            Type: "VTI-based",
-            Remote: remote_public_ip,
-            AuthenticationMethod: "pubkey",
-            PublicCert: remotecrt,
-            PrivateCert: remotekey,
-            SharedCA: root_ca,
-            LocalIdentifier: local_public_ip,
-            CryptoProposal: all_proposals,
-            ForceCryptoProposal: "0",
-            Connections: conn,
-
-        }
-        
-        ipsec_resource_remote := resource.IpsecResource{
-            Name: remote_hub_name,
-            Type: "VTI-based",
-            Remote: local_public_ip,
-            AuthenticationMethod: "pubkey",
-            PublicCert: crt,
-            PrivateCert: key,
-            SharedCA: root_ca,
-            LocalIdentifier: remote_public_ip,
-            CryptoProposal: all_proposals,
-            ForceCryptoProposal: "0",
-            Connections: conn,
-        }
-
-        resutil := NewResUtil()
-        resutil.AddResource(to, "create", &ipsec_resource_local)
-        resutil.AddResource(remote_hub, "create", &ipsec_resource_remote)
-
-        err = resutil.Deploy("YAML")
-
-        if err != nil {
-            return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Unable to create the object: fail to deploy resource")
-        }
-        */   
+            }
         }
         t, err = GetDBUtils().CreateObject(c, m, t)
     } else {

@@ -38,7 +38,7 @@ func (c *ProposalResource) ToYaml() string {
     return `apiVersion: ` + SdewanApiVersion + `
 kind: IpsecProposal
 metadata:
-  name:` + c.Name + `
+  name: ` + c.Name + `
   namespace: default
   labels:
     sdewanPurpose: ` + SdewanPurpose + `

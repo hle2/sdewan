@@ -17,7 +17,6 @@
 package resource
 
 import (
-        "log"
         "strings"
 )
 
@@ -58,63 +57,62 @@ func (c *IpsecResource) GetName() string {
 }
 
 func (c *IpsecResource) GetType() string {
-        return c.Type
+        return "IpsecResource with " + c.Type
 }
 
 func (c *IpsecResource) ToYaml() string {
+        var r string
         p := strings.Join(c.CryptoProposal, ",")
         pr := strings.Join(c.Connections.CryptoProposal, ",")
 
         if c.AuthenticationMethod == "pubkey" {
-            return `apiVersion:` + SdewanApiVersion + ` 
+            return `apiVersion: ` + SdewanApiVersion + ` 
 kind: IpsecHost
 metadata:
-  name:` +  c.Name + `
+  name: ` +  c.Name + `
   namespace: default
   labels:
-    sdewanPurpose:` + c.Name + `
+    sdewanPurpose: ` + c.SdewanPurpose + `
 spec:
-  name:` + c.Name + `
-  type:` + c.Type + `
-  remote:` + c.Remote + `
+  type: ` + c.Type + `
+  remote: ` + c.Remote + `
   authentication_method: `+ c.AuthenticationMethod +`
-  local_public_cert:` + c.PublicCert + `
-  local_private_cert:` + c.PrivateCert + `
-  shared_ca:` + c.SharedCA + `
-  local_identifier:` + c.LocalIdentifier + `
-  force_crypto_proposal:` + c.ForceCryptoProposal + `
-  crypto_proposal:` + p + `
+  local_public_cert: ` + c.PublicCert + `
+  local_private_cert: ` + c.PrivateCert + `
+  shared_ca: ` + c.SharedCA + `
+  local_identifier: ` + c.LocalIdentifier + `
+  force_crypto_proposal: "` + c.ForceCryptoProposal + `"
+  crypto_proposal: [` + p + `]
   connections: 
-  - name:` + c.Connections.Name + `
-    conn_type:` + c.Connections.ConnectionType + `
-    mode:` +  c.Connections.Mode + `
-    mark:` +  c.Connections.Mark + `
-    local_updown:` + c.Connections.LocalUpDown + `
-    crypto_proposal:` + pr
+  - name: ` + c.Connections.Name + `
+    conn_type: ` + c.Connections.ConnectionType + `
+    mode: ` +  c.Connections.Mode + `
+    mark: "` +  c.Connections.Mark + `"
+    local_updown: ` + c.Connections.LocalUpDown + `
+    crypto_proposal: [` + pr +`]`
         } else if c.AuthenticationMethod == "psk" {
-            return `apiVersion:` + SdewanApiVersion + ` 
+            return `apiVersion: ` + SdewanApiVersion + ` 
 kind: IpsecHost
 metadata:
-  name:` +  c.Name + `
+  name: ` +  c.Name + `
   namespace: default
   labels:
-    sdewanPurpose:` + c.Name + `
+    sdewanPurpose: ` + c.SdewanPurpose + `
 spec:
-  name:` + c.Name + `
-  type:` + c.Type + `
-  remote:` + c.Remote + `
-  authentication_method:` + c.AuthenticationMethod + `
-  pre_shared_key:` + c.PresharedKey + `
-  local_identifier:` + c.LocalIdentifier + `
-  force_crypto_proposal:` + c.ForceCryptoProposal + `
-  crypto_proposal:` + p + `
+  type: ` + c.Type + `
+  remote: ` + c.Remote + `
+  authentication_method: ` + c.AuthenticationMethod + `
+  pre_shared_key: ` + c.PresharedKey + `
+  local_identifier: ` + c.LocalIdentifier + `
+  force_crypto_proposal: ` + c.ForceCryptoProposal + `
+  crypto_proposal: ` + p + `
   connections: 
-  - name:` + c.Connections.Name + `
-    conn_type:` + c.Connections.ConnectionType + `
-    mode:` + c.Connections.Mode + `
-    mark:` + c.Connections.Mark + `
-    local_updown:` + c.Connections.LocalUpDown + `
-    crypto_proposal:` + pr
+  - name: ` + c.Connections.Name + `
+    conn_type: ` + c.Connections.ConnectionType + `
+    mode: ` + c.Connections.Mode + `
+    mark: ` + c.Connections.Mark + `
+    local_updown: ` + c.Connections.LocalUpDown + `
+    crypto_proposal: ` + pr
         } else {
                 log.Println("Unsupported authentication method.")
                 return "Error"

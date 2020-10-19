@@ -190,17 +190,16 @@ func (d *ResUtil) Deploy(format string) error {
     ctxval := cca.ctxval    // id
     compositeHandle := cca.compositeAppHandle // cid
 
+    var appOrderInstr struct {
+    Apporder []string `json:"apporder"`
+    }
+    var appDepInstr struct {
+        Appdep map[string]string `json:"appdependency"`
+    }
+    appdep := make(map[string]string)
+
     // create a com_app for each device
     for device, res := range d.resmap {
-        var appOrderInstr struct {
-        Apporder []string `json:"apporder"`
-        }
-
-        var appDepInstr struct {
-            Appdep map[string]string `json:"appdependency"`
-        }
-        appdep := make(map[string]string)
-
         // Add application
         app_name := device.GetMetadata().Name + "-app"
         appOrderInstr.Apporder = append(appOrderInstr.Apporder, app_name)
@@ -217,12 +216,13 @@ func (d *ResUtil) Deploy(format string) error {
         // return "<cid>app/app_name/cluster/clusername/"
         clusterhandle, _ := context.AddCluster(apphandle, provider_name+"+"+device.GetMetadata().Name)
         err = addResourcesToCluster(context, clusterhandle, res.Resources)
-        jappOrderInstr, _ := json.Marshal(appOrderInstr)
-        appDepInstr.Appdep = appdep
-        jappDepInstr, _ := json.Marshal(appDepInstr)
-        context.AddInstruction(compositeHandle, "app", "order", string(jappOrderInstr))
-        context.AddInstruction(compositeHandle, "app", "dependency", string(jappDepInstr))
     }
+
+    jappOrderInstr, _ := json.Marshal(appOrderInstr)
+    appDepInstr.Appdep = appdep
+    jappDepInstr, _ := json.Marshal(appDepInstr)
+    context.AddInstruction(compositeHandle, "app", "order", string(jappOrderInstr))
+    context.AddInstruction(compositeHandle, "app", "dependency", string(jappDepInstr))
 
     // invoke deployment prrocess
     appContextID := fmt.Sprintf("%v", ctxval)
