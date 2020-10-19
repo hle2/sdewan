@@ -303,7 +303,6 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         }
         obj1_ipsec_resource = resource.IpsecResource{
             Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
-            SdewanPurpose: obj1.Metadata.Name,
             Type: VTI_MODE,
             Remote: obj2_ip,
             AuthenticationMethod: PUBKEY_AUTH,
@@ -317,7 +316,6 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         }
         obj2_ipsec_resource = resource.IpsecResource{
             Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)), 
-            SdewanPurpose: obj2.Metadata.Name,
             Type: VTI_MODE,
             Remote: obj1_ip,
             AuthenticationMethod: PUBKEY_AUTH,
