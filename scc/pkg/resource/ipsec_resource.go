@@ -18,6 +18,7 @@ package resource
 
 import (
         "strings"
+        "log"
 )
 
 type Connection struct {
@@ -72,7 +73,7 @@ metadata:
   name: ` +  c.Name + `
   namespace: default
   labels:
-    sdewanPurpose: ` + c.SdewanPurpose + `
+    sdewanPurpose: ` + SdewanPurpose + `
 spec:
   type: ` + c.Type + `
   remote: ` + c.Remote + `
@@ -97,7 +98,7 @@ metadata:
   name: ` +  c.Name + `
   namespace: default
   labels:
-    sdewanPurpose: ` + c.SdewanPurpose + `
+    sdewanPurpose: ` + SdewanPurpose + `
 spec:
   type: ` + c.Type + `
   remote: ` + c.Remote + `
