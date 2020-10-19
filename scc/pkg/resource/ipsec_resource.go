@@ -62,7 +62,6 @@ func (c *IpsecResource) GetType() string {
 }
 
 func (c *IpsecResource) ToYaml() string {
-        var r string
         p := strings.Join(c.CryptoProposal, ",")
         pr := strings.Join(c.Connections.CryptoProposal, ",")
 
