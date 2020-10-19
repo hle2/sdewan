@@ -32,3 +32,7 @@ type TestObjectSpec struct {
 func (c *TestObject) GetMetadata() ObjectMetaData {
 	return c.Metadata
 }
+
+func (c *TestObject) GetType() string {
+    return "Test"
+}

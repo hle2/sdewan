@@ -44,3 +44,11 @@ func (c *HubObject) GetMetadata() ObjectMetaData {
 func (c *HubObject) GetCertName() string {
     return c.Metadata.Name + "-cert"
 }
+
+func (c *HubObject) GetType() string {
+	return "Hub"
+}
+
+func init() {
+	GetObjectBuilder().Register("Hub", &HubObject{})
+}

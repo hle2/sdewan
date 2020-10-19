@@ -29,3 +29,7 @@ type HubDeviceObjectSpec struct {
 func (c *HubDeviceObject) GetMetadata() ObjectMetaData {
 	return c.Metadata
 }
+
+func (c *HubDeviceObject) GetType() string {
+	return "HubDevice"
+}

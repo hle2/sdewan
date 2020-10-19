@@ -29,3 +29,7 @@ type OverlayObjectSpec struct {
 func (c *OverlayObject) GetMetadata() ObjectMetaData {
 	return c.Metadata
 }
+
+func (c *OverlayObject) GetType() string {
+    return "Overlay"
+}

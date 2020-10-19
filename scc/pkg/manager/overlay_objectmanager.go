@@ -36,7 +36,7 @@ const DEFAULT_CONN = "Connection"
 const DEFAULT_UPDOWN = "/etc/updown"
 const CONN_TYPE = "tunnel"
 const MODE = "start"
-const OVERLAYIP = "overlayip"
+const OVERLAYIP ="overlayip"
 const HUBTOHUB = "hub-to-hub"
 const HUBTODEVICE = "hub-to-device"
 const DEVICETODEVICE = "device-to-device"
@@ -113,7 +113,7 @@ func (c *OverlayObjectManager) CreateObject(m map[string]string, t module.Contro
                 Specification: module.OverlayObjectSpec{}}
      resutil.AddResource(&deviceObject, "Create", &resource.FileResource{"mycm", "ConfigMap", "mycm.yaml"})
 
-     err2 := resutil.Deploy("YAML")
+     _, err2 := resutil.Deploy("test-app", "YAML")
 
      if err2 != nil {
          return c.CreateEmptyObject(), pkgerrors.Wrap(err2, "Unable to create the object: fail to deploy resource")
@@ -256,32 +256,31 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         return pkgerrors.New("Error in getting proposals")
     }
     var all_proposals []string
-    var proposalresources []resource.ProposalResource
+    var proposalresources []*resource.ProposalResource
     for i:= 0 ; i < len(proposals); i++ {
-            all_proposals = append(all_proposals, proposals[i].(*module.ProposalObject).Metadata.Name)
-            pr := resource.ProposalResource{proposals[i].(*module.ProposalObject).Metadata.Name, proposals[i].(*module.ProposalObject).Specification.Encryption, proposals[i].(*module.ProposalObject).Specification.Hash, proposals[i].(*module.ProposalObject).Specification.DhGroup}
-            proposalresources = append(proposalresources, pr)
+        proposal_obj := proposals[i].(*module.ProposalObject)
+        all_proposals = append(all_proposals, proposal_obj.Metadata.Name)
+        // pr := resource.ProposalResource{proposals[i].(*module.ProposalObject).Metadata.Name, proposals[i].(*module.ProposalObject).Specification.Encryption, proposals[i].(*module.ProposalObject).Specification.Hash, proposals[i].(*module.ProposalObject).Specification.DhGroup}
+        pr := proposal_obj.ToResource()
+        proposalresources = append(proposalresources, pr)
     }
 
     //Get the overlay cert
     var root_ca string
     root_ca, _, _ = c.GetCertificate(m[OverlayResource])
 
-    var Obj1 module.ControllerObject
-    var Obj2 module.ControllerObject
     var obj1_ipsec_resource resource.IpsecResource
     var obj2_ipsec_resource resource.IpsecResource
+    var obj1_ip string
+    var obj2_ip string
 
     switch conntype {
     case HUBTOHUB:
         obj1 := m1.(*module.HubObject)
         obj2 := m2.(*module.HubObject)
 
-        obj1_ip := obj1.Status.Data[PUBLICIP]
-        obj2_ip := obj2.Status.Data[PUBLICIP]
-
-        Obj1 = obj1
-        Obj2 = obj2
+        obj1_ip = obj1.Status.Data[PUBLICIP]
+        obj2_ip = obj2.Status.Data[PUBLICIP]
 
         //Keypair
         obj1_crt, obj1_key, err := GetHubCertificate(obj1.GetCertName(),namespace)
@@ -292,6 +291,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         if err != nil {
             log.Println(err)
         }
+
         //IpsecResources
         conn := resource.Connection{
             Name: DEFAULT_CONN,
@@ -302,7 +302,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             CryptoProposal: all_proposals,
         }
         obj1_ipsec_resource = resource.IpsecResource{
-            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
+            Name: obj1.Metadata.Name + obj2.Metadata.Name + "Conn",
             Type: VTI_MODE,
             Remote: obj2_ip,
             AuthenticationMethod: PUBKEY_AUTH,
@@ -315,7 +315,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             Connections: conn,
         }
         obj2_ipsec_resource = resource.IpsecResource{
-            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)), 
+            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
             Type: VTI_MODE,
             Remote: obj1_ip,
             AuthenticationMethod: PUBKEY_AUTH,
@@ -395,22 +395,34 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         return pkgerrors.New("Unknown connection type")
     }
 
-    //Add resource
-    resutil := NewResUtil()
+    cend1 := module.NewConnectionEnd(m1, obj1_ip)
+    cend2 := module.NewConnectionEnd(m2, obj2_ip)
+    
+    cend1.AddResource(&obj1_ipsec_resource, false)
+    cend2.AddResource(&obj2_ipsec_resource, false)
     for i :=0; i < len(proposalresources); i++ {
-        resutil.AddResource(Obj1, "create", &proposalresources[i])
-        resutil.AddResource(Obj2, "create", &proposalresources[i])
+        cend1.AddResource(proposalresources[i], true)
+        cend2.AddResource(proposalresources[i], true)
     }
-    resutil.AddResource(Obj1, "create", &obj1_ipsec_resource)
-    resutil.AddResource(Obj2, "create", &obj2_ipsec_resource)
+
+    co := module.NewConnectionObject(cend1, cend2)
+    cm := GetConnectionManager()
+    err = cm.Deploy(m[OverlayResource], co)
+    //Add resource
+    //resutil := NewResUtil()
+    //resutil.AddResource(Obj1, "create", &obj1_ipsec_resource)
+    //resutil.AddResource(Obj2, "create", &obj2_ipsec_resource)
+    //for i :=0; i < len(proposalresources); i++ {
+    //    resutil.AddResource(Obj1, "create", proposalresources[i])
+    //    resutil.AddResource(Obj2, "create", proposalresources[i])
+    //}
 
     //Deploy resources
-    err = resutil.Deploy("YAML")
+    //err = resutil.Deploy("YAML")
 
     if err != nil {
         return pkgerrors.Wrap(err, "Unable to create the object: fail to deploy resource")
     }
 
     return nil
-
 }

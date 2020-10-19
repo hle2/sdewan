@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-package module
+package resource
 
-// ControllerObject define the basic functionality of ControllerObject
-type ControllerObject interface {
-	GetMetadata() ObjectMetaData
-	GetType() string
+import (
+)
+
+type EmptyResource struct {
 }
 
-// ObjectMetaData contains the parameters 
-type ObjectMetaData struct {
-	Name        string `json:"name" validate:"required,hostname_rfc1123"`
-	Description string `json:"description"`
-	UserData1   string `json:"userData1"`
-	UserData2   string `json:"userData2"`
+func (c *EmptyResource) GetName() string {
+	return ""
+}
+
+func (c *EmptyResource) GetType() string {
+	return "Empty"
+}
+
+func (c *EmptyResource) ToYaml() string {
+	return ""
 }

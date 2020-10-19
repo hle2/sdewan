@@ -46,6 +46,10 @@ func (c *IPRangeObject) GetMetadata() ObjectMetaData {
 	return c.Metadata
 }
 
+func (c *IPRangeObject) GetType() string {
+    return "IPRange"
+}
+
 func (c *IPRangeObject) base() string {
     index := strings.LastIndex(c.Specification.Subnet, ".")
     if index == -1 {

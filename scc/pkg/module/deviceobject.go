@@ -37,3 +37,11 @@ type DeviceObjectSpec struct {
 func (c *DeviceObject) GetMetadata() ObjectMetaData {
 	return c.Metadata
 }
+
+func (c *DeviceObject) GetType() string {
+	return "Device"
+}
+
+func init() {
+	GetObjectBuilder().Register("Device", &DeviceObject{})
+}

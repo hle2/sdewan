@@ -37,6 +37,10 @@ func (c *ProposalObject) GetMetadata() ObjectMetaData {
 	return c.Metadata
 }
 
+func (c *ProposalObject) GetType() string {
+    return "Proposal"
+}
+
 func (c *ProposalObject) ToResource() *resource.ProposalResource {
     return &resource.ProposalResource{
         Name: c.Metadata.Name,

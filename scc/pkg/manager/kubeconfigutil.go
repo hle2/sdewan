@@ -131,14 +131,14 @@ func (c *KubeConfigUtil)checkKubeConfigAvail(conf []byte, ips []string, port str
             cluster_objs, _, err := unstructured.NestedSlice(conf_obj, "clusters")
             if err == nil {
                 if len(cluster_objs) > 0 {
-                cluster_obj := cluster_objs[0].(map[string]interface{})
-                // get server
-                url, _, err := unstructured.NestedString(cluster_obj, "cluster", "server")
-                if err != nil {
-                    log.Println(err)
-                }
-                ip := strings.Split(strings.Split(url, ":")[1], "//")[1]
-                return conf, ip, nil
+                    cluster_obj := cluster_objs[0].(map[string]interface{})
+                    // get server
+                    url, _, err := unstructured.NestedString(cluster_obj, "cluster", "server")
+                    if err != nil {
+                        log.Println(err)
+                    }
+                    ip := strings.Split(strings.Split(url, ":")[1], "//")[1]
+                    return conf, ip, nil
                 } else {
                     log.Println("No cluster available")
                     return conf, "", pkgerrors.New("IP doesn't exist in the kubeconfig check")

@@ -183,21 +183,20 @@ func (d *ResUtil) AddResource(device module.ControllerObject, action string, res
     return nil
 }
 
-func (d *ResUtil) Deploy(format string) error {
+func (d *ResUtil) Deploy(app_name string, format string) (string, error) {
     // Generate Application context
-    cca, err := makeAppContextForCompositeApp(project_name, "app", "1", "1")
+    cca, err := makeAppContextForCompositeApp(project_name, app_name + "-d", "1.0", "1.0")
     context := cca.context  // appcontext.AppContext
     ctxval := cca.ctxval    // id
     compositeHandle := cca.compositeAppHandle // cid
 
     var appOrderInstr struct {
-    Apporder []string `json:"apporder"`
+        Apporder []string `json:"apporder"`
     }
     var appDepInstr struct {
-        Appdep map[string]string `json:"appdependency"`
-    }
+            Appdep map[string]string `json:"appdependency"`
+        }
     appdep := make(map[string]string)
-
     // create a com_app for each device
     for device, res := range d.resmap {
         // Add application
@@ -229,8 +228,52 @@ func (d *ResUtil) Deploy(format string) error {
     err = rsyncclient.InvokeInstallApp(appContextID)
     if err != nil {
         log.Println(err)
-        return err
+        return appContextID, err
     }
 
-    return nil
+    return appContextID, nil
+}
+
+func (d *ResUtil) Undeploy(app_name string, format string) (string, error) {
+    // Generate Application context
+    cca, err := makeAppContextForCompositeApp(project_name, app_name + "-u", "1.0", "1.0")
+    context := cca.context  // appcontext.AppContext
+    ctxval := cca.ctxval    // id
+    compositeHandle := cca.compositeAppHandle // cid
+
+    var appOrderInstr struct {
+        Apporder []string `json:"apporder"`
+    }
+    var appDepInstr struct {
+            Appdep map[string]string `json:"appdependency"`
+        }
+    appdep := make(map[string]string)
+    // create a com_app for each device
+    for device, res := range d.resmap {
+        // Add application
+        app_name := device.GetMetadata().Name + "-app"
+        appOrderInstr.Apporder = append(appOrderInstr.Apporder, app_name)
+        appdep[app_name] = "go"
+        apphandle, _ := context.AddApp(compositeHandle, app_name)
+
+        // Add cluster
+        clusterhandle, _ := context.AddCluster(apphandle, provider_name+"+"+device.GetMetadata().Name)
+        err = addResourcesToCluster(context, clusterhandle, res.Resources)
+    }
+
+    jappOrderInstr, _ := json.Marshal(appOrderInstr)
+    appDepInstr.Appdep = appdep
+    jappDepInstr, _ := json.Marshal(appDepInstr)
+    context.AddInstruction(compositeHandle, "app", "order", string(jappOrderInstr))
+    context.AddInstruction(compositeHandle, "app", "dependency", string(jappDepInstr))
+
+    // invoke deployment prrocess
+    appContextID := fmt.Sprintf("%v", ctxval)
+    err = rsyncclient.InvokeUninstallApp(appContextID)
+    if err != nil {
+        log.Println(err)
+        return appContextID, err
+    }
+
+    return appContextID, nil
 }

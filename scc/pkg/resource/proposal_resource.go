@@ -31,7 +31,7 @@ func (c *ProposalResource) GetName() string {
 }
 
 func (c *ProposalResource) GetType() string {
-    return "IpsecProposal"
+    return "Proposal"
 }
 
 func (c *ProposalResource) ToYaml() string {
@@ -46,4 +46,8 @@ spec:
   encryption_algorithm: ` + c.Encryption + `
   hash_algorithm: ` + c.Hash + `
   dh_group: ` + c.DhGroup
+}
+
+func init() {
+  GetResourceBuilder().Register("Proposal", &ProposalResource{})
 }

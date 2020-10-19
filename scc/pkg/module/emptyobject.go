@@ -16,16 +16,15 @@
 
 package module
 
-// ControllerObject define the basic functionality of ControllerObject
-type ControllerObject interface {
-	GetMetadata() ObjectMetaData
-	GetType() string
+// App contains metadata for Apps
+type EmptyObject struct {
+	Metadata ObjectMetaData `json:"metadata"`
 }
 
-// ObjectMetaData contains the parameters 
-type ObjectMetaData struct {
-	Name        string `json:"name" validate:"required,hostname_rfc1123"`
-	Description string `json:"description"`
-	UserData1   string `json:"userData1"`
-	UserData2   string `json:"userData2"`
+func (c *EmptyObject) GetMetadata() ObjectMetaData {
+	return c.Metadata
+}
+
+func (c *EmptyObject) GetType() string {
+	return "Empty"
 }

@@ -17,8 +17,8 @@
 package resource
 
 import (
-        "strings"
         "log"
+        "strings"
 )
 
 type Connection struct {
@@ -58,7 +58,7 @@ func (c *IpsecResource) GetName() string {
 }
 
 func (c *IpsecResource) GetType() string {
-        return "IpsecResource with " + c.Type
+        return "Ipsec"
 }
 
 func (c *IpsecResource) ToYaml() string {
@@ -117,4 +117,8 @@ spec:
                 log.Println("Unsupported authentication method.")
                 return "Error"
         }
+}
+
+func init() {
+  GetResourceBuilder().Register("Ipsec", &IpsecResource{})
 }

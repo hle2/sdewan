@@ -31,10 +31,14 @@ func (c *FileResource) GetName() string {
 }
 
 func (c *FileResource) GetType() string {
-	return c.Type
+	return "File"
 }
 
 func (c *FileResource) ToYaml() string {
 	yamlFile, _ := ioutil.ReadFile(c.FileName)
 	return string(yamlFile)
+}
+
+func init() {
+	GetResourceBuilder().Register("File", &FileResource{})
 }

@@ -107,9 +107,10 @@ func (c *HubConnObjectManager) GetObject(m map[string]string) (module.Controller
 }
 
 func (c *HubConnObjectManager) GetObjects(m map[string]string) ([]module.ControllerObject, error) {
-    // Todo: Query Hub Connection Status
-    
-    return []module.ControllerObject{}, nil
+    overlay_name := m[OverlayResource]
+    hub_name := m[HubResource]
+
+    return GetConnectionManager().GetObjects(overlay_name, module.CreateEndName("Hub", hub_name))
 }
 
 func (c *HubConnObjectManager) UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {

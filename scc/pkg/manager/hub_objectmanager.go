@@ -19,19 +19,16 @@ package manager
 import (
     "io"
     "log"
-    //"errors"
     "strings"
     "encoding/json"
     "encoding/base64"
 
     "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
-    //"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/client"
-    //"github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"
     pkgerrors "github.com/pkg/errors"
 )
 
-const PUBLICIP = "publicip"
+const PUBLICIP="publicip"
 
 type HubObjectKey struct {
     OverlayName string `json:"overlay-name"`
@@ -128,7 +125,7 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
     } else {
         log.Println(err)
     }
-
+    
     //Create cert for ipsec connection
     log.Println("Create Certificate: " + hub_name + "-cert")
     _, _, err = overlay.CreateCertificate(overlay_name, hub_name + "-cert")
@@ -137,19 +134,18 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
         return t, err
     }
 
-
     //Get all available hub objects
     hubs, err := c.GetObjects(m)
     if err != nil {
-            log.Println(err)
+        log.Println(err)
     }
 
     if len(hubs) > 0 && err == nil {
         for i := 0; i < len(hubs); i++ {
-            err := overlay.SetupConnection(m, t, hubs[i], HUBTOHUB, NameSpaceName)
+            err := overlay.SetupConnection(m, t, hubs[i], "hub-to-hub", NameSpaceName)
             if err != nil {
                 log.Println("Setup connection with " + hubs[i].(*module.HubObject).Metadata.Name + " failed.")
-            }
+            }    
         }
         t, err = GetDBUtils().CreateObject(c, m, t)
     } else {
@@ -187,10 +183,9 @@ func (c *HubObjectManager) DeleteObject(m map[string]string) error {
     hub_name := m[HubResource]
     log.Println("Delete Certificate: " + hub_name + "-cert")
     overlay.DeleteCertificate(hub_name + "-cert")
-        // DB Operation
+    // DB Operation
     err := GetDBUtils().DeleteObject(c, m)
     return err
-
 }
 
 func GetHubCertificate(cert_name string, namespace string)(string, string, error){
