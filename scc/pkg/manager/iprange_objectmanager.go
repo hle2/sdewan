@@ -61,6 +61,10 @@ func ValidateIPRangeObject(sl validator.StructLevel) {
     }
 }
 
+func (c *IPRangeObjectManager) GetResourceName() string {
+    return IPRangeResource
+}
+
 func (c *IPRangeObjectManager) IsOperationSupported(oper string) bool {
     if oper == "PUT" {
         // Not allowed for update

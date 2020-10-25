@@ -31,6 +31,7 @@ type ControllerObjectManager interface {
     GetOwnResManagers() []ControllerObjectManager
     AddOwnResManager(mgr ControllerObjectManager) 
     
+    GetResourceName() string
     IsOperationSupported(oper string) bool
     GetStoreKey(m map[string]string, t module.ControllerObject, isCollection bool) (db.Key, error)
     CreateEmptyObject() module.ControllerObject

@@ -61,6 +61,10 @@ func NewOverlayObjectManager() *OverlayObjectManager {
     }
 }
 
+func (c *OverlayObjectManager) GetResourceName() string {
+    return OverlayResource
+}
+
 func (c *OverlayObjectManager) IsOperationSupported(oper string) bool {
     return true
 }

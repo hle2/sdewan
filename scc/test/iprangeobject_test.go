@@ -107,6 +107,15 @@ func TestCreateObject(t *testing.T) {
             expectedErrCode: 422,
         },
         {
+            name: "DumplicateName",
+            obj: module.IPRangeObject{
+                Metadata: module.ObjectMetaData{"ipr1", "", "", ""}, 
+                Specification: module.IPRangeObjectSpec{"192.168.2.3", 10, 15}},
+            url: BaseUrl,
+            expectedErr: true,
+            expectedErrCode: 409,
+        },
+        {
             name: "WrongOverlayName",
             obj: module.IPRangeObject{
                 Metadata: module.ObjectMetaData{"my-ipr", "", "", ""}, 

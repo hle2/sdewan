@@ -51,6 +51,10 @@ func NewHubObjectManager() *HubObjectManager {
     }
 }
 
+func (c *HubObjectManager) GetResourceName() string {
+    return HubResource
+}
+
 func (c *HubObjectManager) IsOperationSupported(oper string) bool {
     return true
 }

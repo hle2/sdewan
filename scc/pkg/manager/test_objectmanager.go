@@ -59,6 +59,9 @@ func ValidateMyObject(sl validator.StructLevel) {
     }
 }
 
+func (c *TestObjectManager) GetResourceName() string {
+    return "test-name"
+}
 
 func (c *TestObjectManager) IsOperationSupported(oper string) bool {
     return true

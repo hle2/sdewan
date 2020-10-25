@@ -46,6 +46,10 @@ func NewProposalObjectManager() *ProposalObjectManager {
     }
 }
 
+func (c *ProposalObjectManager) GetResourceName() string {
+    return ProposalResource
+}
+
 func (c *ProposalObjectManager) IsOperationSupported(oper string) bool {
     return true
 }

@@ -46,6 +46,10 @@ func NewHubConnObjectManager() *HubConnObjectManager {
     }
 }
 
+func (c *HubConnObjectManager) GetResourceName() string {
+    return ConnectionResource
+}
+
 func (c *HubConnObjectManager) IsOperationSupported(oper string) bool {
     if oper == "GETS" {
         return true

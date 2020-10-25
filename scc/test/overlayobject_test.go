@@ -96,6 +96,14 @@ func TestCreateObject(t *testing.T) {
             expectedErr: true,
             expectedErrCode: 422,
         },
+        {
+            name: "DumplicateName",
+            obj: module.OverlayObject{
+                Metadata: module.ObjectMetaData{"overlay1", "", "", ""}, 
+                Specification: module.OverlayObjectSpec{}},
+            expectedErr: true,
+            expectedErrCode: 409,
+        },
     }
 
     for _, tcase := range tcases {

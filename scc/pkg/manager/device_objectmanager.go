@@ -18,7 +18,10 @@ package manager
 
 import (
     "io"
+    //"log"
     "encoding/json"
+    //"encoding/base64"
+
     "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
     pkgerrors "github.com/pkg/errors"
@@ -43,6 +46,10 @@ func NewDeviceObjectManager() *DeviceObjectManager {
             ownResManagers: []ControllerObjectManager {},
         },
     }
+}
+
+func (c *DeviceObjectManager) GetResourceName() string {
+    return DeviceResource
 }
 
 func (c *DeviceObjectManager) IsOperationSupported(oper string) bool {
@@ -93,6 +100,34 @@ func (c *DeviceObjectManager) ParseObject(r io.Reader) (module.ControllerObject,
 }
 
 func (c *DeviceObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
+    /*
+    //overlay := GetManagerset().Overlay
+    //overlay_name := m[OverlayResource]
+    to := t.(*module.DeviceObject)
+    //device_name := to.Metadata.Name
+
+    local_public_ips := to.Specification.PublicIps
+    var config []byte
+    config, err := base64.StdEncoding.DecodeString(to.Specification.KubeConfig)
+    if err != nil {
+        log.Println(err)
+        return t, err
+    }
+
+    if len(local_public_ips) > 0 && !to.Specification.ForceHubConnectivity {
+        // Use public IP as external connection
+
+        // Setup IPsec tunnel with other device
+    } else {
+        // Use Hub as external connection
+
+        // Apply OIP from IPRange manager
+
+        // Setup DNAT rule in Hub
+
+        // Setup IPsec tunnel with other device with public IP
+    }
+    */
     // DB Operation
     t, err := GetDBUtils().CreateObject(c, m, t)
 

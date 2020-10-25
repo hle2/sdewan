@@ -46,6 +46,10 @@ func NewDeviceConnObjectManager() *DeviceConnObjectManager {
     }
 }
 
+func (c *DeviceConnObjectManager) GetResourceName() string {
+    return ConnectionResource
+}
+
 func (c *DeviceConnObjectManager) IsOperationSupported(oper string) bool {
     if oper == "GETS" {
         return true

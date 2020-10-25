@@ -127,6 +127,15 @@ func TestCreateObject(t *testing.T) {
             expectedErr: true,
             expectedErrCode: 500,
         },
+        {
+            name: "DumplicateName",
+            obj: module.ProposalObject{
+                Metadata: module.ObjectMetaData{"proposal1", "", "", ""}, 
+                Specification: module.ProposalObjectSpec{"aes512", "sha512", "modp4096"}},
+            url: BaseUrl,
+            expectedErr: true,
+            expectedErrCode: 409,
+        },
     }
 
     for _, tcase := range tcases {

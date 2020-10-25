@@ -46,6 +46,10 @@ func NewHubDeviceObjectManager() *HubDeviceObjectManager {
     }
 }
 
+func (c *HubDeviceObjectManager) GetResourceName() string {
+    return DeviceResource
+}
+
 func (c *HubDeviceObjectManager) IsOperationSupported(oper string) bool {
     if oper == "POST" || oper == "DELETE" {
         return true
