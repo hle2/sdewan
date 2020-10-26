@@ -20,18 +20,31 @@ package module
 type DeviceObject struct {
 	Metadata ObjectMetaData `json:"metadata"`
 	Specification DeviceObjectSpec `json:"spec"`
+	Status DeviceObjectStatus `json:"-"`
 }
 
-//DeviceObjectSpec contains the parameters
+// DeviceObjectSpec contains the parameters
 type DeviceObjectSpec struct {
 	PublicIps    	[]string 	`json:"publicIps"`
 	ForceHubConnectivity    	bool 	`json:"forceHubConnectivity"`
 	ProxyHub		string 	`json:"proxyHub"`
-	ProxyHubPort	int32	`json:"proxyHubPort"`
+	ProxyHubPort	int 	`json:"proxyHubPort"`
 	UseHub4Internet	bool 	`json:"useHub4Internet"`
 	DedicatedSFC	bool 	`json:"dedicatedSFC"`	
 	CertificateId 	string 	`json:"certificateId"`
 	KubeConfig 		string 	`json:"kubeConfig"`
+}
+
+// DeviceObjectStatus
+type DeviceObjectStatus struct {
+    // 1: use public ip 2: use hub as proxy
+    Mode  int
+    // ip used for external connection
+    // if Mode=1, ip is one of public ip
+    // if Mode=2, ip is the OIP allocated by SCC
+    Ip string
+    // Status Data
+    Data map[string]string
 }
 
 func (c *DeviceObject) GetMetadata() ObjectMetaData {

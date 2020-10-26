@@ -430,3 +430,9 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
 
     return nil
 }
+
+func (c *OverlayObjectManager) SetupHubProxy(m map[string]string, h module.ControllerObject, d module.ControllerObject, namespace string) error {
+    // DNAT rule
+    // IPsec rule
+    return nil
+}

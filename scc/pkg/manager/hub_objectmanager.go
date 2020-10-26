@@ -99,6 +99,9 @@ func (c *HubObjectManager) ParseObject(r io.Reader) (module.ControllerObject, er
     var v module.HubObject
     err := json.NewDecoder(r).Decode(&v)
 
+    // initial Status
+    v.Status.Data = make(map[string]string)
+    v.Status.ProxyPort = make(map[string]string)
     return &v, err
 }
 
@@ -123,9 +126,10 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
     config, local_public_ip, err = kubeutil.checkKubeConfigAvail(config, local_public_ips, "6443")
     if err == nil {
         log.Println("Verified public ip " + local_public_ip)
-        stat := make(map[string]string)
-        stat[PUBLICIP] = local_public_ip
-        to.Status.Data = stat
+    //    stat := make(map[string]string)
+    //    stat[PUBLICIP] = local_public_ip
+    //    to.Status.Data = stat
+        to.Status.Data[PUBLICIP] = local_public_ip
     } else {
         log.Println(err)
     }
