@@ -279,6 +279,7 @@ func (c *DeviceObjectManager) DeleteObject(m map[string]string) error {
         return nil
     }
 
+    overlay_manager := GetManagerset().Overlay
     conn_manager := GetConnectionManager()
     ipr_manager := GetManagerset().IPRange
     hub_manager := GetManagerset().Hub
@@ -323,6 +324,10 @@ func (c *DeviceObjectManager) DeleteObject(m map[string]string) error {
             }
         }
     }
+
+    // Delete certificate
+    log.Println("Delete Certificate: " + device_name + "-cert")
+    overlay_manager.DeleteCertificate(device_name + "-cert")
 
     // DB Operation
     err = GetDBUtils().DeleteObject(c, m)
