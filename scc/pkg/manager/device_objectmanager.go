@@ -239,7 +239,7 @@ func (c *DeviceObjectManager) CreateObject(m map[string]string, t module.Control
     for i := 0; i < len(devices); i++ {
         dev :=  devices[i].(*module.DeviceObject)
         if to.Status.Mode == 1 || dev.Status.Mode == 1 {
-            err := overlay_namager.SetupConnection(m, to, dev, DEVICETODEVICE, NameSpaceName)
+            err = overlay_namager.SetupConnection(m, to, dev, DEVICETODEVICE, NameSpaceName)
             if err != nil {
                 log.Println(err)
             }
@@ -287,7 +287,7 @@ func (c *DeviceObjectManager) DeleteObject(m map[string]string) error {
     device_name := m[DeviceResource]
 
     // Reset all IpSec connection setup by this device
-    conns, err := conn_manager.GetObjects(overlay_name, device_name)
+    conns, err := conn_manager.GetObjects(overlay_name, module.CreateEndName(t.GetType(), device_name))
     if err != nil {
         log.Println(err)
     } else {

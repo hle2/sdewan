@@ -18,7 +18,9 @@ package manager
 
 import (
     "io"
+    "log"
     "encoding/json"
+
     "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
     pkgerrors "github.com/pkg/errors"
@@ -82,8 +84,30 @@ func (c *HubDeviceObjectManager) ParseObject(r io.Reader) (module.ControllerObje
 }
 
 func (c *HubDeviceObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-    // Todo: setup hub-device connection
-    return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
+    // Setup hub-device connection
+    hub_name := m[HubResource]
+    device_name := m[DeviceResource]
+
+    hub_manager := GetManagerset().Hub
+    dev_manager := GetManagerset().Device
+    overlay_namager := GetManagerset().Overlay
+
+    hub, err := hub_manager.GetObject(m)
+    if err != nil {
+        return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Hub " + hub_name + " is not defined")
+    }
+
+    dev, err := dev_manager.GetObject(m)
+    if err != nil {
+        return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Device " + device_name + " is not defined")
+    }
+
+    err = overlay_namager.SetupConnection(m, hub, dev, HUBTODEVICE, NameSpaceName)
+    if err != nil {
+        return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Fail to setup connection between " + hub_name + " and " + device_name)
+    }
+
+    return c.CreateEmptyObject(), nil
 }
 
 func (c *HubDeviceObjectManager) GetObject(m map[string]string) (module.ControllerObject, error) {
@@ -99,6 +123,37 @@ func (c *HubDeviceObjectManager) UpdateObject(m map[string]string, t module.Cont
 }
 
 func (c *HubDeviceObjectManager) DeleteObject(m map[string]string) error {
-    // Todo: delete hub-device connection
-    return pkgerrors.New("Not implemented")
+    // Delete hub-device connection
+    overlay_name := m[OverlayResource]
+    hub_name := m[HubResource]
+    device_name := m[DeviceResource]
+
+    hub_manager := GetManagerset().Hub
+    dev_manager := GetManagerset().Device
+    conn_manager := GetConnectionManager()
+
+    hub, err := hub_manager.GetObject(m)
+    if err != nil {
+        return pkgerrors.Wrap(err, "Hub " + hub_name + " is not defined")
+    }
+
+    dev, err := dev_manager.GetObject(m)
+    if err != nil {
+        return pkgerrors.Wrap(err, "Device " + device_name + " is not defined")
+    }
+
+    conn, err := conn_manager.GetObject(overlay_name,
+        module.CreateEndName(hub.GetType(), hub.GetMetadata().Name),
+        module.CreateEndName(dev.GetType(), dev.GetMetadata().Name))
+    if err != nil {
+        log.Println(err)
+    } else {
+        conn_obj := conn.(*module.ConnectionObject)
+        err = conn_manager.Undeploy(overlay_name, *conn_obj)
+        if err != nil {
+            log.Println(err)
+        }
+    }
+
+    return nil
 }
