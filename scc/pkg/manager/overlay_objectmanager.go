@@ -283,8 +283,8 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         obj1 := m1.(*module.HubObject)
         obj2 := m2.(*module.HubObject)
 
-        obj1_ip = obj1.Status.Data[PUBLICIP]
-        obj2_ip = obj2.Status.Data[PUBLICIP]
+        obj1_ip = obj1.Status.IP
+        obj2_ip = obj2.Status.IP
 
         //Keypair
         obj1_crt, obj1_key, err := GetHubCertificate(obj1.GetCertName(),namespace)

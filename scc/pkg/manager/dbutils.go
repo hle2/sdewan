@@ -17,10 +17,27 @@
 package manager
 
 import (
+    "encoding/base64"
     "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
     pkgerrors "github.com/pkg/errors"
+    mtypes "github.com/onap/multicloud-k8s/src/orchestrator/pkg/module/types"
 )
+
+const PROVIDERNAME = "akraino_scc"
+
+type Cluster struct {
+    Metadata mtypes.Metadata `json:"metadata"`
+}
+
+type ClusterContent struct {
+    Kubeconfig string `json:"kubeconfig"`
+}
+
+type ClusterKey struct {
+    ClusterProviderName string `json:"provider"`
+    ClusterName         string `json:"cluster"`
+}
 
 type DBUtils struct {
 }
@@ -136,6 +153,32 @@ func (d *DBUtils) DeleteObject(c ControllerObjectManager, m map[string]string) e
     err = db.DBconn.Remove(c.GetStoreName(), key)
     if err != nil {
         return pkgerrors.Wrap(err, "Delete Object")
+    }
+
+    return nil
+}
+
+func (d *DBUtils) RegisterDevice(cluster_name string, kubeconfig_file string) error {
+    var q ClusterContent
+    var p Cluster
+
+    //content, err := ioutil.ReadFile(kubeconfig_file)
+    q.Kubeconfig = base64.StdEncoding.EncodeToString(kubeconfig_file)
+    key := ClusterKey{
+        ClusterProviderName: PROVIDERNAME,
+        ClusterName:         cluster_name,
+    }
+
+    p.Metadata.Name = cluster_name
+
+    err = db.DBconn.Insert("cluster", key, nil, "clustermetadata", p)
+    if err != nil {
+        return pkgerrors.Wrap(err, "Creating DB Entry")
+    }
+
+    err = db.DBconn.Insert("cluster", key, nil, "clustercontent", q)
+    if err != nil {
+        return pkgerrors.Wrap(err, "Creating DB Entry")
     }
 
     return nil

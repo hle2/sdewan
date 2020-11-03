@@ -28,7 +28,7 @@ import (
     pkgerrors "github.com/pkg/errors"
 )
 
-const PUBLICIP = "publicip"
+const DEFAULTPORT = "6443"
 
 type HubObjectKey struct {
     OverlayName string `json:"overlay-name"`
@@ -123,13 +123,18 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
     local_public_ips := to.Specification.PublicIps
     log.Println("public ips: %+v", local_public_ips)
     kubeutil := GetKubeConfigUtil()
-    config, local_public_ip, err = kubeutil.checkKubeConfigAvail(config, local_public_ips, "6443")
+    config, local_public_ip, err = kubeutil.checkKubeConfigAvail(config, local_public_ips, DEFAULTPORT)
     if err == nil {
         log.Println("Verified public ip " + local_public_ip)
     //    stat := make(map[string]string)
     //    stat[PUBLICIP] = local_public_ip
     //    to.Status.Data = stat
-        to.Status.Data[PUBLICIP] = local_public_ip
+        to.Status.IP = local_public_ip
+        //Register cluster to scc db
+        err := GetDBUtils().RegisterDevice(hub_name, string(config))
+        if err != nil {
+            log.Println(err)
+        }
     } else {
         log.Println(err)
     }
@@ -186,11 +191,35 @@ func (c *HubObjectManager) UpdateObject(m map[string]string, t module.Controller
 }
 
 func (c *HubObjectManager) DeleteObject(m map[string]string) error {
-    // DB Operation
-    overlay := GetManagerset().Overlay
+    //Check resource exists
+    t, err := c.GetObject(m)
+    if err != nil {
+        return nil
+    }
+
+    overlay_manager := GetManagerset().Overlay
+    conn_manager := GetConnectionManager()
+
+    overlay_name := m[OverlayResource]
     hub_name := m[HubResource]
+
+// Reset all IpSec connection setup by this device
+    conns, err := conn_manager.GetObjects(overlay_name, module.CreateEndName(t.GetType(), hub_name))
+    if err != nil {
+        log.Println(err)
+    } else {
+        for i := 0; i < len(conns); i++ {
+            conn :=  conns[i].(*module.ConnectionObject)
+            err = conn_manager.Undeploy(overlay_name, *conn)
+            if err != nil {
+                log.Println(err)
+            }
+        }
+    }
+
     log.Println("Delete Certificate: " + hub_name + "-cert")
     overlay.DeleteCertificate(hub_name + "-cert")
+
     // DB Operation
     err := GetDBUtils().DeleteObject(c, m)
     return err

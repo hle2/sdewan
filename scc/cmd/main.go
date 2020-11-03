@@ -28,8 +28,12 @@ import (
     "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/manager"
     contextDb "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/contextdb"
+    controller "github.com/onap/multicloud-k8s/src/orchestrator/pkg/module/controller"
     "github.com/gorilla/handlers"
 )
+
+const HOST = "localhost"
+const PORT = "9031"
 
 func main() {
 
@@ -102,5 +106,36 @@ func main() {
             httpServer.TLSConfig = tlsConfig
 
             err = httpServer.ListenAndServeTLS("", "")
+    }
+    //Register rsync client
+    serviceName := os.Getenv(ENV_RSYNC_NAME)
+    if serviceName == "" {
+            serviceName = default_rsync_name
+            log.Info("Using default name for rsync service name", log.Fields{
+                        "Name": serviceName,
+            })
+    }
+
+    client := controller.NewControllerClient()
+
+    // Create or update the controller entry
+    controller := controller.Controller{
+            Metadata: mtypes.Metadata{
+                    Name: serviceName,
+            },
+            Spec: controller.ControllerSpec{
+                    Host:     HOST,
+                    Port:     PORT,
+                    Type:     controller.CONTROLLER_TYPE_ACTION,
+                    Priority: controller.MinControllerPriority,
+            },
+    }
+    _, err := client.CreateController(controller, true)
+    if err != nil {
+            log.Error("Failed to create/update a gRPC controller", log.Fields{
+                    "Error":      err,
+                    "Controller": serviceName,
+            })
+            return err
     }
 }
