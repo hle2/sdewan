@@ -52,10 +52,7 @@ func (c *ObjectBuilder) ToObject(obj_str string) (ControllerObject, error) {
 	if !strings.Contains(obj_str, "-") {
 		return &EmptyObject{}, pkgerrors.New("Not a valid object")
 	}
-	strs := strings.Split(obj_str, "-")
-	if len(strs) != 2 {
-		return &EmptyObject{}, pkgerrors.New("Not a valid object")
-	}
+	strs := strings.SplitN(obj_str, "-", 2)
 
 	if v, ok := c.omap[strs[0]]; ok {
 		retObj := reflect.New(v).Interface()

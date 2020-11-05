@@ -185,7 +185,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         }
 
         // Check device availability
-        hub_ips := []string{proxy_hub_obj.Status.Data[PUBLICIP]}
+        hub_ips := []string{proxy_hub_obj.Status.IP}
         err = wait.PollImmediate(time.Second*5, time.Second*30,
             func() (bool, error) {
                 kube_config, _, err := kubeutil.checkKubeConfigAvail(kube_config, hub_ips, strconv.Itoa(to.Specification.ProxyHubPort))

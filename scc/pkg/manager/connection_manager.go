@@ -137,8 +137,8 @@ func (c *ConnectionManager) Undeploy(overlay string, cm module.ConnectionObject)
         cm.Info.State = module.StateEnum.Undeployed
     }
 
-    // Save to DB
-    _, err = c.UpdateObject(overlay, cm)
+    // Delete connection object
+    err = c.DeleteObject(overlay, cm.Info.End1.Name, cm.Info.End2.Name)
 
     return err
 }

@@ -22,6 +22,7 @@ import (
     "os/signal"
     "time"
 
+    logs "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/logutils"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/api"
     "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/auth"
     "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/config"
@@ -30,10 +31,13 @@ import (
     contextDb "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/contextdb"
     controller "github.com/onap/multicloud-k8s/src/orchestrator/pkg/module/controller"
     "github.com/gorilla/handlers"
+    mtypes "github.com/onap/multicloud-k8s/src/orchestrator/pkg/module/types"
 )
 
 const HOST = "localhost"
-const PORT = "9031"
+const PORT = 9031
+const default_rsync_name = "rsync"
+const ENV_RSYNC_NAME = "RSYNC_NAME"
 
 func main() {
 
@@ -111,7 +115,7 @@ func main() {
     serviceName := os.Getenv(ENV_RSYNC_NAME)
     if serviceName == "" {
             serviceName = default_rsync_name
-            log.Info("Using default name for rsync service name", log.Fields{
+            logs.Info("Using default name for rsync service name", logs.Fields{
                         "Name": serviceName,
             })
     }
@@ -130,12 +134,11 @@ func main() {
                     Priority: controller.MinControllerPriority,
             },
     }
-    _, err := client.CreateController(controller, true)
+    _, err = client.CreateController(controller, true)
     if err != nil {
-            log.Error("Failed to create/update a gRPC controller", log.Fields{
+            logs.Error("Failed to create/update a gRPC controller", logs.Fields{
                     "Error":      err,
                     "Controller": serviceName,
             })
-            return err
     }
 }

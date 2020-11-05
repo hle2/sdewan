@@ -52,7 +52,7 @@ func (c *ResourceBuilder) ToObject(obj_str string) (ISdewanResource, error) {
 	if !strings.Contains(obj_str, "-") {
 		return &EmptyResource{}, pkgerrors.New("Not a valid object")
 	}
-	strs := strings.Split(obj_str, "-")
+	strs := strings.SplitN(obj_str, "-", 2)
 	if len(strs) != 2 {
 		return &EmptyResource{}, pkgerrors.New("Not a valid object")
 	}

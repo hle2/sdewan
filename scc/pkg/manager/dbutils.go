@@ -158,7 +158,7 @@ func (d *DBUtils) DeleteObject(c ControllerObjectManager, m map[string]string) e
     return nil
 }
 
-func (d *DBUtils) RegisterDevice(cluster_name string, kubeconfig_file string) error {
+func (d *DBUtils) RegisterDevice(cluster_name string, kubeconfig_file []byte) error {
     var q ClusterContent
     var p Cluster
 
@@ -171,7 +171,7 @@ func (d *DBUtils) RegisterDevice(cluster_name string, kubeconfig_file string) er
 
     p.Metadata.Name = cluster_name
 
-    err = db.DBconn.Insert("cluster", key, nil, "clustermetadata", p)
+    err := db.DBconn.Insert("cluster", key, nil, "clustermetadata", p)
     if err != nil {
         return pkgerrors.Wrap(err, "Creating DB Entry")
     }

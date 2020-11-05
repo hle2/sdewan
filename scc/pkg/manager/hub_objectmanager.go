@@ -126,12 +126,8 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
     config, local_public_ip, err = kubeutil.checkKubeConfigAvail(config, local_public_ips, DEFAULTPORT)
     if err == nil {
         log.Println("Verified public ip " + local_public_ip)
-    //    stat := make(map[string]string)
-    //    stat[PUBLICIP] = local_public_ip
-    //    to.Status.Data = stat
         to.Status.IP = local_public_ip
-        //Register cluster to scc db
-        err := GetDBUtils().RegisterDevice(hub_name, string(config))
+        err := GetDBUtils().RegisterDevice(hub_name, config)
         if err != nil {
             log.Println(err)
         }
@@ -192,6 +188,7 @@ func (c *HubObjectManager) UpdateObject(m map[string]string, t module.Controller
 
 func (c *HubObjectManager) DeleteObject(m map[string]string) error {
     //Check resource exists
+
     t, err := c.GetObject(m)
     if err != nil {
         return nil
@@ -218,10 +215,10 @@ func (c *HubObjectManager) DeleteObject(m map[string]string) error {
     }
 
     log.Println("Delete Certificate: " + hub_name + "-cert")
-    overlay.DeleteCertificate(hub_name + "-cert")
+    overlay_manager.DeleteCertificate(hub_name + "-cert")
 
     // DB Operation
-    err := GetDBUtils().DeleteObject(c, m)
+    err = GetDBUtils().DeleteObject(c, m)
     return err
 }
 

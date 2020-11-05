@@ -19,6 +19,7 @@ package manager
 import (
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"
+    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/resourcestatus"
 
     "github.com/onap/multicloud-k8s/src/orchestrator/pkg/appcontext"
     rsyncclient "github.com/onap/multicloud-k8s/src/orchestrator/pkg/grpc/installappclient"
@@ -96,7 +97,7 @@ func makeAppContextForCompositeApp(p, ca, v, rName string) (contextForCompositeA
     return cca, nil
 }
 
-func addResourcesToCluster(ct appcontext.AppContext, ch interface{}, resources []DeployResource) error {
+func addResourcesToCluster(ct appcontext.AppContext, ch interface{}, resources []DeployResource, isDeploy bool) error {
 
     var resOrderInstr struct {
         Resorder []string `json:"resorder"`
@@ -115,7 +116,11 @@ func addResourcesToCluster(ct appcontext.AppContext, ch interface{}, resources [
         // rtc.RtcAddResource("<cid>/app/app_name/cluster/clusername/", res.name, res.content)
         // -> save ("<cid>/app/app_name/cluster/clusername/resource/res.name/", res.content) in etcd
         // return ("<cid>/app/app_name/cluster/clusername/resource/res.name/"
-        _, err := ct.AddResource(ch, resource_name, resource_data)
+        rh, err := ct.AddResource(ch, resource_name, resource_data)
+	if isDeploy == false {
+		//Delete resource
+		ct.AddLevelValue(rh, "status", resourcestatus.ResourceStatus{Status:resourcestatus.RsyncStatusEnum.Applied})
+	}
         if err != nil {
             cleanuperr := ct.DeleteCompositeApp()
             if cleanuperr != nil {
@@ -156,6 +161,23 @@ func InitRsyncClient() bool {
         }
     }
     return found
+}
+
+func initializeAppContextStatus(ac appcontext.AppContext, acStatus appcontext.AppContextStatus) error {
+        h, err := ac.GetCompositeAppHandle()
+        if err != nil {
+                return err
+        }
+        sh, err := ac.GetLevelHandle(h, "status")
+        if sh == nil {
+                _, err = ac.AddLevelValue(h, "status", acStatus)
+        } else {
+                err = ac.UpdateValue(sh, acStatus)
+        }
+        if err != nil {
+                return err
+        }
+        return nil
 }
 
 // --------------------------------------------------------------------------------------------------------------
@@ -214,7 +236,7 @@ func (d *ResUtil) Deploy(app_name string, format string) (string, error) {
         // -> save ("<cid>app/app_name/cluster/clusername/", clustername) in etcd
         // return "<cid>app/app_name/cluster/clusername/"
         clusterhandle, _ := context.AddCluster(apphandle, provider_name+"+"+device.GetMetadata().Name)
-        err = addResourcesToCluster(context, clusterhandle, res.Resources)
+        err = addResourcesToCluster(context, clusterhandle, res.Resources, true)
     }
 
     jappOrderInstr, _ := json.Marshal(appOrderInstr)
@@ -258,7 +280,7 @@ func (d *ResUtil) Undeploy(app_name string, format string) (string, error) {
 
         // Add cluster
         clusterhandle, _ := context.AddCluster(apphandle, provider_name+"+"+device.GetMetadata().Name)
-        err = addResourcesToCluster(context, clusterhandle, res.Resources)
+        err = addResourcesToCluster(context, clusterhandle, res.Resources, false)
     }
 
     jappOrderInstr, _ := json.Marshal(appOrderInstr)
@@ -267,6 +289,7 @@ func (d *ResUtil) Undeploy(app_name string, format string) (string, error) {
     context.AddInstruction(compositeHandle, "app", "order", string(jappOrderInstr))
     context.AddInstruction(compositeHandle, "app", "dependency", string(jappDepInstr))
 
+    initializeAppContextStatus(context, appcontext.AppContextStatus{Status: appcontext.AppContextStatusEnum.Instantiated})
     // invoke deployment prrocess
     appContextID := fmt.Sprintf("%v", ctxval)
     err = rsyncclient.InvokeUninstallApp(appContextID)
