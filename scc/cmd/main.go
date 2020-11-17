@@ -21,6 +21,7 @@ import (
     "os"
     "os/signal"
     "time"
+    "strconv"
 
     logs "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/logutils"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/api"
@@ -32,10 +33,10 @@ import (
     controller "github.com/onap/multicloud-k8s/src/orchestrator/pkg/module/controller"
     "github.com/gorilla/handlers"
     mtypes "github.com/onap/multicloud-k8s/src/orchestrator/pkg/module/types"
+
+    rconfig "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/config"
 )
 
-const HOST = "localhost"
-const PORT = 9031
 const default_rsync_name = "rsync"
 const ENV_RSYNC_NAME = "RSYNC_NAME"
 
@@ -83,6 +84,38 @@ func main() {
         log.Println(err)
     }
 
+    //Register rsync client
+    serviceName := os.Getenv(ENV_RSYNC_NAME)
+    if serviceName == "" {
+            serviceName = default_rsync_name
+            logs.Info("Using default name for rsync service name", logs.Fields{
+                        "Name": serviceName,
+            })
+    }
+
+    client := controller.NewControllerClient()
+
+    // Create or update the controller entry
+    rsync_port, _ := strconv.Atoi(rconfig.GetConfiguration().RsyncPort)
+    controller := controller.Controller{
+            Metadata: mtypes.Metadata{
+                    Name: serviceName,
+            },
+            Spec: controller.ControllerSpec{
+                    Host:     rconfig.GetConfiguration().RsyncIP,
+                    Port:     rsync_port,
+                    Type:     controller.CONTROLLER_TYPE_ACTION,
+                    Priority: controller.MinControllerPriority,
+            },
+    }
+    _, err = client.CreateController(controller, true)
+    if err != nil {
+            logs.Error("Failed to create/update a gRPC controller", logs.Fields{
+                    "Error":      err,
+                    "Controller": serviceName,
+            })
+    }
+
     // create http server
     httpRouter := api.NewRouter(nil, nil, nil, nil, nil, nil, nil, nil)
     loggedRouter := handlers.LoggingHandler(os.Stdout, httpRouter)
@@ -111,34 +144,5 @@ func main() {
 
             err = httpServer.ListenAndServeTLS("", "")
     }
-    //Register rsync client
-    serviceName := os.Getenv(ENV_RSYNC_NAME)
-    if serviceName == "" {
-            serviceName = default_rsync_name
-            logs.Info("Using default name for rsync service name", logs.Fields{
-                        "Name": serviceName,
-            })
-    }
 
-    client := controller.NewControllerClient()
-
-    // Create or update the controller entry
-    controller := controller.Controller{
-            Metadata: mtypes.Metadata{
-                    Name: serviceName,
-            },
-            Spec: controller.ControllerSpec{
-                    Host:     HOST,
-                    Port:     PORT,
-                    Type:     controller.CONTROLLER_TYPE_ACTION,
-                    Priority: controller.MinControllerPriority,
-            },
-    }
-    _, err = client.CreateController(controller, true)
-    if err != nil {
-            logs.Error("Failed to create/update a gRPC controller", logs.Fields{
-                    "Error":      err,
-                    "Controller": serviceName,
-            })
-    }
 }
