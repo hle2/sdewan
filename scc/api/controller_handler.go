@@ -67,11 +67,13 @@ func (h ControllerHandler) createHandler(w http.ResponseWriter, r *http.Request)
     }
 
     // Check whether the resource is available
-    vars[h.client.GetResourceName()] = v.GetMetadata().Name
-    ret, err = h.client.GetObject(vars)
-    if err == nil {
-        http.Error(w, "Resource " + v.GetMetadata().Name + " is available already", http.StatusConflict)
-        return
+    if h.client.IsOperationSupported("GET") {
+        vars[h.client.GetResourceName()] = v.GetMetadata().Name
+        ret, err = h.client.GetObject(vars)
+        if err == nil {
+            http.Error(w, "Resource " + v.GetMetadata().Name + " is available already", http.StatusConflict)
+            return
+        }
     }
 
     ret, err = h.client.CreateObject(vars, v)

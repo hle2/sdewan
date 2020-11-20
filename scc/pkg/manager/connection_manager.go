@@ -165,7 +165,7 @@ func (c *ConnectionManager) GetObject(overlay string, key1 string, key2 string) 
     }
     value, err := db.DBconn.Find(c.GetStoreName(), key, c.GetStoreMeta())
     if err != nil {
-        return c.CreateEmptyObject(), nil
+        return c.CreateEmptyObject(), err
     }
 
     if value == nil {
@@ -176,7 +176,7 @@ func (c *ConnectionManager) GetObject(overlay string, key1 string, key2 string) 
         }
         value, err = db.DBconn.Find(c.GetStoreName(), key, c.GetStoreMeta())
         if err != nil {
-            return c.CreateEmptyObject(), nil
+            return c.CreateEmptyObject(), err
         }
     }
 

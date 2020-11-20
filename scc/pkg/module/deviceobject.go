@@ -55,6 +55,14 @@ func (c *DeviceObject) GetType() string {
 	return "Device"
 }
 
+func (c *DeviceObject) IsProxyHub(hub_name string) bool {
+	if c.Status.Mode == 2 {
+        return c.Specification.ProxyHub == hub_name
+	}
+
+    return false
+}
+
 func init() {
 	GetObjectBuilder().Register("Device", &DeviceObject{})
 }

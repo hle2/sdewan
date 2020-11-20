@@ -85,12 +85,14 @@ func (c *HubDeviceObjectManager) ParseObject(r io.Reader) (module.ControllerObje
 
 func (c *HubDeviceObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
     // Setup hub-device connection
+    overlay_name := m[OverlayResource]
     hub_name := m[HubResource]
     device_name := m[DeviceResource]
 
     hub_manager := GetManagerset().Hub
     dev_manager := GetManagerset().Device
     overlay_namager := GetManagerset().Overlay
+    conn_manager := GetConnectionManager()
 
     hub, err := hub_manager.GetObject(m)
     if err != nil {
@@ -100,6 +102,13 @@ func (c *HubDeviceObjectManager) CreateObject(m map[string]string, t module.Cont
     dev, err := dev_manager.GetObject(m)
     if err != nil {
         return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Device " + device_name + " is not defined")
+    }
+
+    _, err = conn_manager.GetObject(overlay_name,
+        module.CreateEndName(hub.GetType(), hub.GetMetadata().Name),
+        module.CreateEndName(dev.GetType(), dev.GetMetadata().Name))
+    if err == nil {
+        return c.CreateEmptyObject(), pkgerrors.New("The connection between Hub " + hub_name + " and Device " + device_name + " is already created")
     }
 
     err = overlay_namager.SetupConnection(m, hub, dev, HUBTODEVICE, NameSpaceName)
@@ -140,6 +149,12 @@ func (c *HubDeviceObjectManager) DeleteObject(m map[string]string) error {
     dev, err := dev_manager.GetObject(m)
     if err != nil {
         return pkgerrors.Wrap(err, "Device " + device_name + " is not defined")
+    }
+
+    // check if hub is ProxyHub of the device
+    dev_obj := dev.(*module.DeviceObject)
+    if dev_obj.IsProxyHub(hub_name) {
+        return pkgerrors.New("Cannot delete hub-device connection if hub is the ProxyHub of device")
     }
 
     conn, err := conn_manager.GetObject(overlay_name,
