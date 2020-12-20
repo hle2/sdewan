@@ -18,7 +18,6 @@ package manager
 
 import (
     "os"
-    "strings"
     "log"
     "io/ioutil"
     "sigs.k8s.io/yaml"
@@ -122,50 +121,21 @@ func (c *KubeConfigUtil) UpdateK8sConfig(conf []byte, server string, insecure bo
 
 func (c *KubeConfigUtil)checkKubeConfigAvail(conf []byte, ips []string, port string) ([]byte, string, error){
     kubeclient := client.NewClient("", "", conf)
-    is_reachable := kubeclient.IsReachable()
-    if is_reachable {
-        conf_us_obj := &unstructured.Unstructured{}
-        _, err := DecodeYAMLFromData(conf, conf_us_obj)
-        if err == nil {
-            conf_obj := conf_us_obj.UnstructuredContent()
-            cluster_objs, _, err := unstructured.NestedSlice(conf_obj, "clusters")
-            if err == nil {
-                if len(cluster_objs) > 0 {
-                    cluster_obj := cluster_objs[0].(map[string]interface{})
-                    // get server
-                    url, _, err := unstructured.NestedString(cluster_obj, "cluster", "server")
-                    if err != nil {
-                        log.Println(err)
-                    }
-                    ip := strings.Split(strings.Split(url, ":")[1], "//")[1]
-                    return conf, ip, nil
-                } else {
-                    log.Println("No cluster available")
-                    return conf, "", pkgerrors.New("IP doesn't exist in the kubeconfig check")
-                }
-            } else {
-                return conf, "", pkgerrors.New("Error in kubeconfig format")
-            }
-           
-        } else {
-            return conf, "", pkgerrors.New("Error in kubeconfig format")
+    for i := 0 ; i < len(ips); i++ {
+        ip := ips[i]
+       //UpdateConfig
+        new_url := "https://" + ips[i] + ":" + port
+        conf, err := kubeutil.UpdateK8sConfig(conf, new_url, true)
+        if err != nil {
+                log.Println(err)
+                return []byte(""), "", pkgerrors.New("Error in updating kubeconfig")
         }
-    } else {
-        for i := 0 ; i < len(ips); i++ {
-            ip := ips[i]
-            //UpdateConfig
-            new_url := "https://" + ips[i] + ":" + port
-            conf, err := kubeutil.UpdateK8sConfig(conf, new_url, false)
-            if err != nil {
-                    log.Println(err)
-                    return []byte(""), "", pkgerrors.New("Error in updating kubeconfig")
-            }
-            kubeclient = client.NewClient("", "", []byte(conf))
-            is_reachable = kubeclient.IsReachable()
-            if is_reachable == true {
-                    return conf, ip, nil
-            }
+        kubeclient = client.NewClient("", "", []byte(conf))
+        is_reachable := kubeclient.IsReachable()
+        if is_reachable == true {
+                return conf, ip, nil
         }
-        return []byte(""), "", pkgerrors.New("No public ip found workable for the cluster")
     }
+    return []byte(""), "", pkgerrors.New("No public ip found workable for the cluster")
 }
+
