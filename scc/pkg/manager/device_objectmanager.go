@@ -334,3 +334,25 @@ func (c *DeviceObjectManager) DeleteObject(m map[string]string) error {
 
     return err
 }
+
+func GetDeviceCertificate(cert_name string, namespace string)(string, string, error){
+    cu, err := GetCertUtil()
+    if err != nil {
+        log.Println(err)
+        return "", "", err
+    } else {
+        ready := cu.IsCertReady(cert_name, namespace)
+        if ready != true {
+            log.Println("Cert for device is not ready")
+            return "", "", pkgerrors.New("Cert for device is not ready")
+        } else {
+            crts, key, err := cu.GetKeypair(cert_name, namespace)
+            crt := strings.SplitAfter(crts, "-----END CERTIFICATE-----")[0]
+            if err != nil {
+                log.Println(err)
+                return "", "", err
+            }
+            return crt, key, nil
+        }
+    }
+}

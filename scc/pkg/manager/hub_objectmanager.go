@@ -126,7 +126,7 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
     config, local_public_ip, err = kubeutil.checkKubeConfigAvail(config, local_public_ips, DEFAULTPORT)
     if err == nil {
         log.Println("Verified public ip " + local_public_ip)
-        to.Status.IP = local_public_ip
+        to.Status.Ip = local_public_ip
         err := GetDBUtils().RegisterDevice(hub_name, config)
         if err != nil {
             log.Println(err)

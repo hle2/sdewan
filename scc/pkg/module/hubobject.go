@@ -42,7 +42,7 @@ type HubObjectSpec struct {
 
 //HubObjectStatus
 type HubObjectStatus struct {
-	    IP              string
+	    Ip              string
         Data            map[string]string
         // Allocated proxy port for device
         ProxyPort       map[string]string

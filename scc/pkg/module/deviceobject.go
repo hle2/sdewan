@@ -66,3 +66,7 @@ func (c *DeviceObject) IsProxyHub(hub_name string) bool {
 func init() {
 	GetObjectBuilder().Register("Device", &DeviceObject{})
 }
+
+func (c *DeviceObject) GetCertName() string {
+    return c.Metadata.Name + "-cert"
+}

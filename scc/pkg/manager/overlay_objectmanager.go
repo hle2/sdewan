@@ -34,12 +34,15 @@ const PUBKEY_AUTH = "pubkey"
 const FORCECRYPTOPROPOSAL = "0"
 const DEFAULT_CONN = "Connection"
 const DEFAULT_UPDOWN = "/etc/updown"
+const OIP_UPDOWN = "/etc/oip_updown"
 const CONN_TYPE = "tunnel"
 const MODE = "start"
 const OVERLAYIP = "overlayip"
 const HUBTOHUB = "hub-to-hub"
 const HUBTODEVICE = "hub-to-device"
 const DEVICETODEVICE = "device-to-device"
+const BYCONFIG = "%config"
+const ANY = "%any"
 
 type OverlayObjectKey struct {
     OverlayName string `json:"overlay-name"`
@@ -283,8 +286,8 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         obj1 := m1.(*module.HubObject)
         obj2 := m2.(*module.HubObject)
 
-        obj1_ip = obj1.Status.IP
-        obj2_ip = obj2.Status.IP
+        obj1_ip = obj1.Status.Ip
+        obj2_ip = obj2.Status.Ip
 
         //Keypair
         obj1_crt, obj1_key, err := GetHubCertificate(obj1.GetCertName(),namespace)
@@ -333,18 +336,18 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         }
     // Todo: Hub-to-device connection
     case HUBTODEVICE:
-    /*    obj1 := m1.(*module.HubOject)
+        obj1 := m1.(*module.HubOject)
         obj2 := m2.(*module.DeviceOject)
 
-        obj1_ip := obj1.Status.Data[PUBLICIP]
-        obj2_ip := obj2.Status.Data[OVERLAYIP]
+        obj1_ip := obj1.Status.Ip
+        obj2_ip := obj2.Status.Ip
 
         //Keypair
-        obj1_crt, obj1_key, err := obj1.GetCertificate(namespace)
+        obj1_crt, obj1_key, err := GetHubCertificate(obj1.GetCertName(),namespace)
         if err != nil {
             log.Println(err)
         }
-        obj2_crt, obj2_key, err := obj2.GetCertificate(namespace)
+        obj2_crt, obj2_key, err := GetDeviceCertificate(obj2.GetCertName(),namespace)
         if err != nil {
             log.Println(err)
         }
@@ -355,7 +358,8 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             ConnectionType: CONN_TYPE,
             Mode: MODE,
             Mark: DEFAULT_MARK,
-            RemoteSourceIp: 
+            RemoteSourceIp: obj2_ip,
+            LocalUpDown: DEFAULT_UPDOWN,
             CryptoProposal: all_proposals,
         }
         obj2_conn := resource.Connection{
@@ -363,38 +367,89 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             ConnectionType: CONN_TYPE,
             Mode: MODE,
             Mark: DEFAULT_MARK,
-            LocalSourceIp: "%config" //Need to use const
+            LocalUpDown: OIP_UPDOWN,
+            LocalSourceIp: BYCONFIG, //Need to use const
             CryptoProposal: all_proposals,
         }
         obj1_ipsec_resource := resource.IpsecResource{
-            Name: obj1.Metadata.Name + obj2.Metadata.Name + "Conn",
+            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
             Type: VTI_MODE,
-            Remote: obj2_ip,
+            Remote: ANY,
             AuthenticationMethod: PUBKEY_AUTH,
-            PublicCert: obj2_crt,
-            PrivateCert: obj2_key,
-            SharedCA: root_ca,
+            PublicCert: base64.StdEncoding.EncodeToString([]byte(obj1_crt)),
+            PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj1_key)),
+            SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
             LocalIdentifier: obj1_ip,
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: conn,
         }
         obj2_ipsec_resource := resource.IpsecResource{
-            Name: obj2.Metadata.Name + obj1.Metadata.Name + "Conn",
+            Name: strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)),
             Type: VTI_MODE,
             Remote: obj1_ip,
             AuthenticationMethod: PUBKEY_AUTH,
-            PublicCert: obj1_crt,
-            PrivateCert: obj1_key,
-            SharedCA: root_ca,
+            PublicCert: base64.StdEncoding.EncodeToString([]byte(obj2_crt)),
+            PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj2_key)),
+            SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
             LocalIdentifier: obj2_ip,
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: conn,
         }
-        */
+        
     //Todo: Device-to-device connection
     case DEVICETODEVICE:
+        obj1 := m1.(*module.DeviceOject)
+        obj2 := m2.(*module.DeviceOject)
+
+        obj1_ip := obj1.Status.Ip
+        obj2_ip := obj2.Status.Ip
+
+        //Keypair
+        obj1_crt, obj1_key, err := GetDeviceCertificate(obj1.GetCertName(),namespace)
+        if err != nil {
+            log.Println(err)
+        }
+        obj2_crt, obj2_key, err := GetDeviceCertificate(obj2.GetCertName(),namespace)
+        if err != nil {
+            log.Println(err)
+        }
+
+        conn := resource.Connection{
+            Name: DEFAULT_CONN,
+            ConnectionType: CONN_TYPE,
+            Mode: MODE,
+            Mark: DEFAULT_MARK,
+            LocalUpDown: DEFAULT_UPDOWN,
+            CryptoProposal: all_proposals,
+        }
+        obj1_ipsec_resource = resource.IpsecResource{
+            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
+            Type: VTI_MODE,
+            Remote: obj2_ip,
+            AuthenticationMethod: PUBKEY_AUTH,
+            PublicCert: base64.StdEncoding.EncodeToString([]byte(obj1_crt)),
+            PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj1_key)),
+            SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
+            LocalIdentifier: obj1_ip,
+            CryptoProposal: all_proposals,
+            ForceCryptoProposal: FORCECRYPTOPROPOSAL,
+            Connections: conn,
+        }
+        obj2_ipsec_resource = resource.IpsecResource{
+            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
+            Type: VTI_MODE,
+            Remote: obj1_ip,
+            AuthenticationMethod: PUBKEY_AUTH,
+            PublicCert: base64.StdEncoding.EncodeToString([]byte(obj2_crt)),
+            PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj2_key)),
+            SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
+            LocalIdentifier: obj2_ip,
+            CryptoProposal: all_proposals,
+            ForceCryptoProposal: FORCECRYPTOPROPOSAL,
+            Connections: conn,
+        }
     default:
         return pkgerrors.New("Unknown connection type")
     }
