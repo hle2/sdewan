@@ -1,51 +1,24 @@
 package main
 
 import (
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
+    rsync "github.com/open-ness/EMCO/src/rsync/pkg/db"
     "log"
     "math/rand"
     "time"
     "io/ioutil"
     "encoding/base64"
     pkgerrors "github.com/pkg/errors"
-
-    mtypes "github.com/onap/multicloud-k8s/src/orchestrator/pkg/module/types"
 )
 
-type Cluster struct {
-    Metadata mtypes.Metadata `json:"metadata"`
-}
-
-type ClusterContent struct {
-    Kubeconfig string `json:"kubeconfig"`
-}
-
-type ClusterKey struct {
-    ClusterProviderName string `json:"provider"`
-    ClusterName         string `json:"cluster"`
-}
-
 func registerCluster(provider_name string, cluster_name string, kubeconfig_file string) error {
-    var q ClusterContent
-    var p Cluster
-
     content, err := ioutil.ReadFile(kubeconfig_file)
-    q.Kubeconfig = base64.StdEncoding.EncodeToString(content)
-    key := ClusterKey{
-        ClusterProviderName: provider_name,
-        ClusterName:         cluster_name,
-    }
 
-    p.Metadata.Name = cluster_name
+    ccc := rsync.NewCloudConfigClient()
 
-    err = db.DBconn.Insert("cluster", key, nil, "clustermetadata", p)
+    _, err = ccc.CreateCloudConfig(provider_name, cluster_name, "0", "sdewan-system", base64.StdEncoding.EncodeToString(content))
     if err != nil {
-        return pkgerrors.Wrap(err, "Creating DB Entry")
-    }
-
-    err = db.DBconn.Insert("cluster", key, nil, "clustercontent", q)
-    if err != nil {
-        return pkgerrors.Wrap(err, "Creating DB Entry")
+        return pkgerrors.Wrap(err, "Error creating cloud config")
     }
 
     return nil

@@ -23,16 +23,16 @@ import (
     "time"
     "strconv"
 
-    logs "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/logutils"
+    logs "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/logutils"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/api"
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/auth"
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/config"
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/auth"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/config"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/manager"
-    contextDb "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/contextdb"
-    controller "github.com/onap/multicloud-k8s/src/orchestrator/pkg/module/controller"
+    contextDb "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/contextdb"
+    controller "github.com/open-ness/EMCO/src/orchestrator/pkg/module/controller"
     "github.com/gorilla/handlers"
-    mtypes "github.com/onap/multicloud-k8s/src/orchestrator/pkg/module/types"
+    mtypes "github.com/open-ness/EMCO/src/orchestrator/pkg/module/types"
 
     rconfig "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/infra/config"
 )

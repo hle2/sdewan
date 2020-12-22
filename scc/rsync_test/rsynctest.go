@@ -1,13 +1,13 @@
 package main
 
 import (
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/appcontext"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/appcontext"
 
-    rsyncclient "github.com/onap/multicloud-k8s/src/orchestrator/pkg/grpc/installappclient"
-    contextDb "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/contextdb"
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/rpc"
-    controller "github.com/onap/multicloud-k8s/src/orchestrator/pkg/module/controller"
+    rsyncclient "github.com/open-ness/EMCO/src/orchestrator/pkg/grpc/installappclient"
+    contextDb "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/contextdb"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/rpc"
+    controller "github.com/open-ness/EMCO/src/orchestrator/pkg/module/controller"
     "log"
     "math/rand"
     "time"
@@ -17,7 +17,7 @@ import (
     "encoding/base64"
     pkgerrors "github.com/pkg/errors"
 
-    mtypes "github.com/onap/multicloud-k8s/src/orchestrator/pkg/module/types"
+    mtypes "github.com/open-ness/EMCO/src/orchestrator/pkg/module/types"
 )
 
 type Cluster struct {

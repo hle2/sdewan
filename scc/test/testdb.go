@@ -3,7 +3,7 @@ package main
 import (
     "log"
     "encoding/json"
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/manager"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"

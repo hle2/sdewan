@@ -19,12 +19,12 @@ package manager
 import (
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/resourcestatus"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/resourcestatus"
 
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/appcontext"
-    rsyncclient "github.com/onap/multicloud-k8s/src/orchestrator/pkg/grpc/installappclient"
-    controller "github.com/onap/multicloud-k8s/src/orchestrator/pkg/module/controller"
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/rpc"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/appcontext"
+    rsyncclient "github.com/open-ness/EMCO/src/orchestrator/pkg/grpc/installappclient"
+    controller "github.com/open-ness/EMCO/src/orchestrator/pkg/module/controller"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/rpc"
     "log"
     "fmt"
     "encoding/json"
@@ -67,31 +67,26 @@ type contextForCompositeApp struct {
     compositeAppHandle interface{}
 }
 
-func makeAppContextForCompositeApp(p, ca, v, rName string) (contextForCompositeApp, error) {
+func makeAppContextForCompositeApp(p, ca, v, rName, dig string, namespace string, level string) (contextForCompositeApp, error) {
     // ctxval: context.rtcObj.id
     context := appcontext.AppContext{}
     ctxval, err := context.InitAppContext()
     if err != nil {
         return contextForCompositeApp{}, pkgerrors.Wrap(err, "Error creating AppContext CompositeApp")
     }
-    // compositeHandle = context.rtc.cid
-    // context.rtc.RtcCreate(): (1) save (cid, id) in etcd  
     compositeHandle, err := context.CreateCompositeApp()
     if err != nil {
         return contextForCompositeApp{}, pkgerrors.Wrap(err, "Error creating CompositeApp handle")
     }
-    // (1) set context.rtcObj.meta (2) save (cid + meta +"/", json.Marshal(rtc.meta)) in etcd
-    err = context.AddCompositeAppMeta(appcontext.CompositeAppMeta{Project: p, CompositeApp: ca, Version: v, Release: rName})
+    err = context.AddCompositeAppMeta(appcontext.CompositeAppMeta{Project: p, CompositeApp: ca, Version: v, Release: rName, DeploymentIntentGroup: dig, Namespace: namespace, Level: level})
     if err != nil {
         return contextForCompositeApp{}, pkgerrors.Wrap(err, "Error Adding CompositeAppMeta")
     }
 
-    // return CompositeAppMeta{Project: p, CompositeApp: ca, Version: v, Release: rn}
     //_, err = context.GetCompositeAppMeta()
 
     log.Println(":: The meta data stored in the runtime context :: ")
 
-    // cca := contextForCompositeApp{context: appcontext.AppContext, ctxval: context.rtcObj.id, compositeAppHandle: context.rtc.cid}
     cca := contextForCompositeApp{context: context, ctxval: ctxval, compositeAppHandle: compositeHandle}
 
     return cca, nil
@@ -207,7 +202,7 @@ func (d *ResUtil) AddResource(device module.ControllerObject, action string, res
 
 func (d *ResUtil) Deploy(app_name string, format string) (string, error) {
     // Generate Application context
-    cca, err := makeAppContextForCompositeApp(project_name, app_name + "-d", "1.0", "1.0")
+    cca, err := makeAppContextForCompositeApp(project_name, app_name + "-d", "1.0", "1.0", "di", "sdewan-system", "0")
     context := cca.context  // appcontext.AppContext
     ctxval := cca.ctxval    // id
     compositeHandle := cca.compositeAppHandle // cid
@@ -258,7 +253,7 @@ func (d *ResUtil) Deploy(app_name string, format string) (string, error) {
 
 func (d *ResUtil) Undeploy(app_name string, format string) (string, error) {
     // Generate Application context
-    cca, err := makeAppContextForCompositeApp(project_name, app_name + "-u", "1.0", "1.0")
+    cca, err := makeAppContextForCompositeApp(project_name, app_name + "-u", "1.0", "1.0", "di", "sdewan-system", "0")
     context := cca.context  // appcontext.AppContext
     ctxval := cca.ctxval    // id
     compositeHandle := cca.compositeAppHandle // cid

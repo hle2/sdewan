@@ -1,12 +1,16 @@
 module github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc
 
 require (
+        github.com/open-ness/EMCO/src/orchestrator v0.0.0-00010101000000-000000000000
 	go.etcd.io/etcd v3.3.12+incompatible
 	google.golang.org/grpc v1.27.1
 	k8s.io/client-go v0.19.0
 )
 
 replace (
+        github.com/open-ness/EMCO/src/orchestrator => ../vendor/github.com/open-ness/EMCO/src/orchestrator
+        github.com/open-ness/EMCO/src/rsync => ../rsync
+        github.com/open-ness/EMCO/src/monitor => ../monitor
         k8s.io/api => k8s.io/api v0.19.0
         k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.19.0
         k8s.io/apimachinery => k8s.io/apimachinery v0.19.0

@@ -18,7 +18,7 @@ package manager
 
 import (
     "log"
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"    
     pkgerrors "github.com/pkg/errors"

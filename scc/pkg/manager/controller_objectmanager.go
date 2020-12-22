@@ -19,7 +19,7 @@ package manager
 import (
     "io"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
-    "github.com/onap/multicloud-k8s/src/orchestrator/pkg/infra/db"
+    "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
 )
 
 // ControllerManager is an interface exposes the ControllerObject functionality
