@@ -18,8 +18,9 @@
 **3. create SDEWAN Central Controller v1 Microservices**
 
 `$ kubectl apply -f scc.yaml -n sdewan-system`
+
 `$ kubectl apply -f scc_rsync.yaml -n sdewan-system`
 
 **4. install monitor resources**
 
-`$ ./monitor-deploy.sh
+`$ ./monitor-deploy.sh`
