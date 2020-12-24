@@ -51,15 +51,15 @@ spec:
     spec:
       containers:
         - name: rsync
-          image: emcov2/emco:stable
+          image: scc:latest
           imagePullPolicy: IfNotPresent
-          command: ["/opt/emco/entrypoint", "rsync"]
-          workingDir: /opt/emco
+          command: ["/opt/scc/entrypoint", "rsync"]
+          workingDir: /opt/scc
           ports:
           - containerPort: 9041
           volumeMounts:
           - name: config
-            mountPath: /opt/emco/config.json
+            mountPath: /opt/scc/config.json
             subPath: config.json
       volumes:
         - name: config

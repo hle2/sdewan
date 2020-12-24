@@ -7,6 +7,14 @@ case ${cmd} in
       ./scc
       ;;
 
+    "rsync")
+      ./rsync
+      ;;
+
+    "monitor")
+      ./monitor
+      ;;
+
     *)
       echo "invalid command ${cmd}"
       sleep infinity
