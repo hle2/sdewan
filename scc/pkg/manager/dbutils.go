@@ -20,6 +20,7 @@ import (
     "encoding/base64"
     "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+    rsync "github.com/open-ness/EMCO/src/rsync/pkg/db"
     pkgerrors "github.com/pkg/errors"
     mtypes "github.com/open-ness/EMCO/src/orchestrator/pkg/module/types"
 )
@@ -159,26 +160,12 @@ func (d *DBUtils) DeleteObject(c ControllerObjectManager, m map[string]string) e
 }
 
 func (d *DBUtils) RegisterDevice(cluster_name string, kubeconfig_file []byte) error {
-    var q ClusterContent
-    var p Cluster
+    content := strings(kubeconfig_file)
+    ccc := rsync.NewCloudConfigClient()
 
-    //content, err := ioutil.ReadFile(kubeconfig_file)
-    q.Kubeconfig = base64.StdEncoding.EncodeToString(kubeconfig_file)
-    key := ClusterKey{
-        ClusterProviderName: PROVIDERNAME,
-        ClusterName:         cluster_name,
-    }
-
-    p.Metadata.Name = cluster_name
-
-    err := db.DBconn.Insert("cluster", key, nil, "clustermetadata", p)
+    _, err = ccc.CreateCloudConfig(PROVIDERNAME, cluster_name, "0", "sdewan-system", base64.StdEncoding.EncodeToString(content))
     if err != nil {
-        return pkgerrors.Wrap(err, "Creating DB Entry")
-    }
-
-    err = db.DBconn.Insert("cluster", key, nil, "clustercontent", q)
-    if err != nil {
-        return pkgerrors.Wrap(err, "Creating DB Entry")
+        return pkgerrors.Wrap(err, "Error creating cloud config")
     }
 
     return nil

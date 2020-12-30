@@ -20,6 +20,7 @@ import (
     "io"
     "log"
     "strings"
+    "strconv"
     "encoding/json"
     "encoding/base64"
     "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
@@ -43,6 +44,9 @@ const HUBTODEVICE = "hub-to-device"
 const DEVICETODEVICE = "device-to-device"
 const BYCONFIG = "%config"
 const ANY = "%any"
+const BASE_PROTOCOL = "TCP"
+const DEFAULT_K8S_API_SERVER_PORT = "6443"
+const ACCEPT='ACCEPT'
 
 type OverlayObjectKey struct {
     OverlayName string `json:"overlay-name"`
@@ -253,7 +257,7 @@ func (c *OverlayObjectManager) GetCertificate(oname string) (string, string, err
 
 //Set up Connection between objects
 //Passing the original map resource, the two objects, connection type("hub-to-hub", "hub-to-device", "device-to-device") and namespace name.
-func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.ControllerObject, m2 module.ControllerObject, conntype string, namespace string) error {
+func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.ControllerObject, m2 module.ControllerObject, conntype string, namespace string, single_end bool) error {
     //Get all proposals available in the overlay
     proposal := GetManagerset().Proposal
     proposals, err := proposal.GetObjects(m)
@@ -347,12 +351,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         if err != nil {
             log.Println(err)
         }
-        obj2_crt, obj2_key, err := GetDeviceCertificate(obj2.GetCertName(),namespace)
-        if err != nil {
-            log.Println(err)
-        }
 
-        //IpsecResources
         obj1_conn := resource.Connection{
             Name: DEFAULT_CONN,
             ConnectionType: CONN_TYPE,
@@ -362,15 +361,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             LocalUpDown: DEFAULT_UPDOWN,
             CryptoProposal: all_proposals,
         }
-        obj2_conn := resource.Connection{
-            Name: DEFAULT_CONN,
-            ConnectionType: CONN_TYPE,
-            Mode: MODE,
-            Mark: DEFAULT_MARK,
-            LocalUpDown: OIP_UPDOWN,
-            LocalSourceIp: BYCONFIG, //Need to use const
-            CryptoProposal: all_proposals,
-        }
+
         obj1_ipsec_resource := resource.IpsecResource{
             Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
             Type: VTI_MODE,
@@ -384,19 +375,37 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: conn,
         }
-        obj2_ipsec_resource := resource.IpsecResource{
-            Name: strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)),
-            Type: VTI_MODE,
-            Remote: obj1_ip,
-            AuthenticationMethod: PUBKEY_AUTH,
-            PublicCert: base64.StdEncoding.EncodeToString([]byte(obj2_crt)),
-            PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj2_key)),
-            SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
-            LocalIdentifier: obj2_ip,
-            CryptoProposal: all_proposals,
-            ForceCryptoProposal: FORCECRYPTOPROPOSAL,
-            Connections: conn,
-        }
+
+        if not single_end:
+            obj2_crt, obj2_key, err := GetDeviceCertificate(obj2.GetCertName(),namespace)
+            if err != nil {
+                log.Println(err)
+            }
+
+            //IpsecResources
+            obj2_conn := resource.Connection{
+                Name: DEFAULT_CONN,
+                ConnectionType: CONN_TYPE,
+                Mode: MODE,
+                Mark: DEFAULT_MARK,
+                LocalUpDown: OIP_UPDOWN,
+                LocalSourceIp: BYCONFIG, //Need to use const
+                CryptoProposal: all_proposals,
+            }
+       
+            obj2_ipsec_resource := resource.IpsecResource{
+                Name: strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)),
+                Type: VTI_MODE,
+                Remote: obj1_ip,
+                AuthenticationMethod: PUBKEY_AUTH,
+                PublicCert: base64.StdEncoding.EncodeToString([]byte(obj2_crt)),
+                PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj2_key)),
+                SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
+                LocalIdentifier: obj2_ip,
+                CryptoProposal: all_proposals,
+                ForceCryptoProposal: FORCECRYPTOPROPOSAL,
+                Connections: conn,
+            }
         
     //Todo: Device-to-device connection
     case DEVICETODEVICE:
@@ -456,15 +465,20 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
 
     cend1 := module.NewConnectionEnd(m1, obj1_ip)
     cend2 := module.NewConnectionEnd(m2, obj2_ip)
-    
+
     cend1.AddResource(&obj1_ipsec_resource, false)
-    cend2.AddResource(&obj2_ipsec_resource, false)
+
+    if not single_end:
+        cend2.AddResource(&obj2_ipsec_resource, false)
+
     for i :=0; i < len(proposalresources); i++ {
         cend1.AddResource(proposalresources[i], true)
-        cend2.AddResource(proposalresources[i], true)
+        if not single_end:
+            cend2.AddResource(proposalresources[i], true)
     }
 
     co := module.NewConnectionObject(cend1, cend2)
+    
     cm := GetConnectionManager()
     err = cm.Deploy(m[OverlayResource], co)
     //Add resource
@@ -487,7 +501,42 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
 }
 
 func (c *OverlayObjectManager) SetupHubProxy(m map[string]string, h module.ControllerObject, d module.ControllerObject, namespace string) error {
-    // DNAT rule
     // IPsec rule
+    c.SetupConnection(m, h, d, "HUBTODEVICE", namespace, true)
+
+    hub := h.(*module.HubOject)
+    device := d.(*module.DeviceOject)
+
+    networks = []
+
+    // DNAT rule
+    hubZoneResource := resource.FirewallZoneResource{
+        Name: strings.ToLower(strings.Replace(hub.Metadata.Name, "-", "", -1) + "_" + hub.GetIfName()),
+        Network: networks.append(hub.GetIfName()),
+        Input: ACCEPT,
+        Output: ACCEPT,
+        Forward: ACCEPT,
+        MASQ: '0',
+        MTU_FIX: '1',
+    }
+
+    hubDnatResource := resource.FirewallDnatResource{
+        Name: strings.ToLower(strings.Replace(hub.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(device.Metadata.Name, "-", "", -1)),
+        Source: hubZoneResource.GetName(),
+        SourceDestIP: hub.Status.Ip,
+        SourceDestPort: strconv.Itoa(device.Specification.ProxyHubPort)
+        DestinationIP: device.Status.Ip,
+        DestinationPort: DEFAULT_K8S_API_SERVER_PORT,
+        Protocol: BASE_PROTOCOL,
+    }
+
+    resutil := NewResUtil()
+    resutil.AddResource(hub, "Create", &hubZoneResource)
+    resutil.AddResource(hub, "Create", &hubDnatResource)
+    err := resutil.Deploy(hub.Metadata.Name + "Firewall", "YAML")
+    if err != nil {
+        return pkgerrors.Wrap(err, "Fail to deploy resource")
+    }
+
     return nil
 }

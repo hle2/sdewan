@@ -21,10 +21,16 @@ import (
         "strings"
 )
 
+const (
+    AuthTypePSK = "psk"
+    AuthTypePUBKEY = "pubkey"
+)
+
 type Connection struct {
         Name           string
         ConnectionType string
         Mode           string
+        LocalSubnet    string
         LocalSourceIp  string
         LocalUpDown    string
         LocalFirewall  string
@@ -65,60 +71,8 @@ func (c *IpsecResource) ToYaml() string {
         p := strings.Join(c.CryptoProposal, ",")
         pr := strings.Join(c.Connections.CryptoProposal, ",")
 
-        if c.AuthenticationMethod == "pubkey" && not c.Connections.RemoteSourceIp && c.Connections.LocalSourceIp {
-          return `apiVersion: ` + SdewanApiVersion + ` 
-kind: IpsecHost
-metadata:
-  name: ` +  c.Name + `
-  namespace: default
-  labels:
-    sdewanPurpose: ` + SdewanPurpose + `
-spec:
-  type: ` + c.Type + `
-  remote: ` + c.Remote + `
-  authentication_method: `+ c.AuthenticationMethod +`
-  local_public_cert: ` + c.PublicCert + `
-  local_private_cert: ` + c.PrivateCert + `
-  shared_ca: ` + c.SharedCA + `
-  local_identifier: ` + c.LocalIdentifier + `
-  force_crypto_proposal: "` + c.ForceCryptoProposal + `"
-  crypto_proposal: [` + p + `]
-  connections: 
-  - name: ` + c.Connections.Name + `
-    conn_type: ` + c.Connections.ConnectionType + `
-    mode: ` +  c.Connections.Mode + `
-    mark: "` +  c.Connections.Mark + `"
-    local_updown: ` + c.Connections.LocalUpDown + `
-    local_source_ip: ` + c.Connections.LocalSourceIp + `
-    crypto_proposal: [` + pr +`]`
-        }
-        else if c.AuthenticationMethod == "pubkey" && not c.Connections.RemoteSourceIp && not c.Connections.LocalSourceIp {
-            return `apiVersion: ` + SdewanApiVersion + ` 
-kind: IpsecHost
-metadata:
-  name: ` +  c.Name + `
-  namespace: default
-  labels:
-    sdewanPurpose: ` + SdewanPurpose + `
-spec:
-  type: ` + c.Type + `
-  remote: ` + c.Remote + `
-  authentication_method: `+ c.AuthenticationMethod +`
-  local_public_cert: ` + c.PublicCert + `
-  local_private_cert: ` + c.PrivateCert + `
-  shared_ca: ` + c.SharedCA + `
-  local_identifier: ` + c.LocalIdentifier + `
-  force_crypto_proposal: "` + c.ForceCryptoProposal + `"
-  crypto_proposal: [` + p + `]
-  connections: 
-  - name: ` + c.Connections.Name + `
-    conn_type: ` + c.Connections.ConnectionType + `
-    mode: ` +  c.Connections.Mode + `
-    mark: "` +  c.Connections.Mark + `"
-    local_updown: ` + c.Connections.LocalUpDown + `
-    crypto_proposal: [` + pr +`]`
-       } else if c.AuthenticationMethod == "pubkey" && c.Connections.RemoteSourceIp {
-            return `apiVersion: ` + SdewanApiVersion + ` 
+        if c.Connections.LocalSubnet {
+          base := `apiVersion: ` + SdewanApiVersion + ` 
 kind: IpsecSite
 metadata:
   name: ` +  c.Name + `
@@ -128,23 +82,44 @@ metadata:
 spec:
   type: ` + c.Type + `
   remote: ` + c.Remote + `
-  authentication_method: `+ c.AuthenticationMethod +`
-  local_public_cert: ` + c.PublicCert + `
-  local_private_cert: ` + c.PrivateCert + `
-  shared_ca: ` + c.SharedCA + `
-  local_identifier: ` + c.LocalIdentifier + `
-  force_crypto_proposal: "` + c.ForceCryptoProposal + `"
-  crypto_proposal: [` + p + `]
+  authentication_method: `+ c.AuthenticationMethod + `
+  force_crypto_proposal: "` + c.ForceCryptoProposal + `
+  crypto_proposal: [` + p + `]`
+
+          connection := `
   connections: 
   - name: ` + c.Connections.Name + `
     conn_type: ` + c.Connections.ConnectionType + `
     mode: ` +  c.Connections.Mode + `
     mark: "` +  c.Connections.Mark + `"
     local_updown: ` + c.Connections.LocalUpDown + `
-    remote_source_ip: ` + c.Connections.RemoteSourceIp`
+    local_subnet: ` + c.Connections.LocalSubnet + `
     crypto_proposal: [` + pr +`]`
-        }  else if c.AuthenticationMethod == "psk" && not c.Connections.RemoteSourceIp {
-            return `apiVersion: ` + SdewanApiVersion + ` 
+
+          if c.Connections.RemoteSourceIp {
+            remote_source_ip := `
+    remote_source_ip: ` + c.Connections.RemoteSourceIp
+            connection += remote_source_ip
+          }
+
+          if c.AuthenticationMethod == AuthTypePUBKEY {
+            auth := `
+  local_public_cert: ` + c.PublicCert + `
+  local_private_cert: ` + c.PrivateCert + `
+  shared_ca: ` + c.SharedCA + `
+  local_identifier: ` + c.LocalIdentifier
+          } else if c.AuthenticationMethod == AuthTypePSK {
+            auth := `
+  pre_shared_key: ` + c.PresharedKey + `
+  local_identifier: ` + c.LocalIdentifier
+          } else {
+            return 'Error in authentication method'
+          }
+
+          return base + auth + connection
+        }
+
+        base := `apiVersion: ` + SdewanApiVersion + ` 
 kind: IpsecHost
 metadata:
   name: ` +  c.Name + `
@@ -154,23 +129,52 @@ metadata:
 spec:
   type: ` + c.Type + `
   remote: ` + c.Remote + `
-  authentication_method: ` + c.AuthenticationMethod + `
-  pre_shared_key: ` + c.PresharedKey + `
-  local_identifier: ` + c.LocalIdentifier + `
-  force_crypto_proposal: ` + c.ForceCryptoProposal + `
-  crypto_proposal: ` + p + `
+  authentication_method: `+ c.AuthenticationMethod +`
+  force_crypto_proposal: "` + c.ForceCryptoProposal + `"
+  crypto_proposal: [` + p + `]`
+
+        if c.Connections.LocalSourceIp {
+          connection := `
   connections: 
   - name: ` + c.Connections.Name + `
     conn_type: ` + c.Connections.ConnectionType + `
-    mode: ` + c.Connections.Mode + `
-    mark: ` + c.Connections.Mark + `
+    mode: ` +  c.Connections.Mode + `
+    mark: "` +  c.Connections.Mark + `"
     local_updown: ` + c.Connections.LocalUpDown + `
-    crypto_proposal: ` + pr
+    local_source_ip: ` + c.Connections.LocalSourceIp + `
+    crypto_proposal: [` + pr +`]`
         } else {
-                log.Println("Unsupported authentication method.")
-                return "Error"
+          connection := `
+  connections: 
+  - name: ` + c.Connections.Name + `
+    conn_type: ` + c.Connections.ConnectionType + `
+    mode: ` +  c.Connections.Mode + `
+    mark: "` +  c.Connections.Mark + `"
+    local_updown: ` + c.Connections.LocalUpDown + `
+    crypto_proposal: [` + pr +`]`
         }
 
+        if c.Connections.RemoteSourceIp {
+          remote_source_ip := `
+    remote_source_ip: ` + c.Connections.RemoteSourceIp
+          connection += remote_source_ip
+        }
+
+        if c.AuthenticationMethod == AuthTypePUBKEY {
+          auth := `
+  local_public_cert: ` + c.PublicCert + `
+  local_private_cert: ` + c.PrivateCert + `
+  shared_ca: ` + c.SharedCA + `
+  local_identifier: ` + c.LocalIdentifier
+        } else if c.AuthenticationMethod == AuthTypePSK {
+          auth := `
+  pre_shared_key: ` + c.PresharedKey + `
+  local_identifier: ` + c.LocalIdentifier
+        } else {
+          return 'Error in authentication method'
+        }
+
+        return base + auth + connection
 }
 
 func init() {
