@@ -160,10 +160,9 @@ func (d *DBUtils) DeleteObject(c ControllerObjectManager, m map[string]string) e
 }
 
 func (d *DBUtils) RegisterDevice(cluster_name string, kubeconfig_file []byte) error {
-    content := strings(kubeconfig_file)
     ccc := rsync.NewCloudConfigClient()
 
-    _, err = ccc.CreateCloudConfig(PROVIDERNAME, cluster_name, "0", "sdewan-system", base64.StdEncoding.EncodeToString(content))
+    _, err := ccc.CreateCloudConfig(PROVIDERNAME, cluster_name, "0", "sdewan-system", base64.StdEncoding.EncodeToString(kubeconfig_file))
     if err != nil {
         return pkgerrors.Wrap(err, "Error creating cloud config")
     }

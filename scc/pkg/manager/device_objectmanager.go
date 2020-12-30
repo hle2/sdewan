@@ -23,6 +23,7 @@ import (
     "strconv"
     "encoding/json"
     "encoding/base64"
+    "strings"
 
     "k8s.io/apimachinery/pkg/util/wait"
 
@@ -185,7 +186,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         }
 
         // Check device availability
-        hub_ips := []string{proxy_hub_obj.Status.IP}
+        hub_ips := []string{proxy_hub_obj.Status.Ip}
         err = wait.PollImmediate(time.Second*5, time.Second*30,
             func() (bool, error) {
                 kube_config, _, err := kubeutil.checkKubeConfigAvail(kube_config, hub_ips, strconv.Itoa(to.Specification.ProxyHubPort))
@@ -239,7 +240,7 @@ func (c *DeviceObjectManager) CreateObject(m map[string]string, t module.Control
     for i := 0; i < len(devices); i++ {
         dev :=  devices[i].(*module.DeviceObject)
         if to.Status.Mode == 1 || dev.Status.Mode == 1 {
-            err = overlay_namager.SetupConnection(m, to, dev, DEVICETODEVICE, NameSpaceName)
+            err = overlay_namager.SetupConnection(m, to, dev, DEVICETODEVICE, NameSpaceName, false)
             if err != nil {
                 log.Println(err)
             }

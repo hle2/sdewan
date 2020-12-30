@@ -27,7 +27,7 @@ type FirewallDnatResource struct {
     SourceDestPort string
     DestinationIP string
     DestinationPort string
-    Protocal string
+    Protocol string
 }
 
 func (c *FirewallDnatResource) GetName() string {
@@ -52,14 +52,15 @@ spec:
   src_dport: ` + c.SourceDestPort + `
   dest_ip: ` + c.DestinationIP + `
   dest_port: ` + c.DestinationPort + `
-  proto: ` + c.Protocal + `
+  proto: ` + c.Protocol + `
   target: DNAT `
 
-    if c.SourceIp {
+    if c.SourceIP != "" {
       basic +=  `
-src_ip: ` + c.SourceIP
+  src_ip: ` + c.SourceIP
   }
-   
+
+  return basic
 }
 
 func init() {

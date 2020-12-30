@@ -111,7 +111,7 @@ func (c *HubDeviceObjectManager) CreateObject(m map[string]string, t module.Cont
         return c.CreateEmptyObject(), pkgerrors.New("The connection between Hub " + hub_name + " and Device " + device_name + " is already created")
     }
 
-    err = overlay_namager.SetupConnection(m, hub, dev, HUBTODEVICE, NameSpaceName)
+    err = overlay_namager.SetupConnection(m, hub, dev, HUBTODEVICE, NameSpaceName, false)
     if err != nil {
         return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Fail to setup connection between " + hub_name + " and " + device_name)
     }

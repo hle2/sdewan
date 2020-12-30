@@ -17,6 +17,7 @@
 package resource
 
 import (
+	"strings"
 )
 
 type FirewallZoneResource struct {
@@ -46,17 +47,19 @@ metadata:
   labels:
     sdewanPurpose: ` + SdewanPurpose + `
 spec:
-  network: ` + c.Network + `
+  network: [` + strings.Join(c.Network, ",") + `]
   input: ` + c.Input + `
   output: ` + c.Output + `
   forward: ` + c.Forward
 
-    if c.MASQ and c.MTU_FIX {
+    if (c.MASQ != "" && c.MTU_FIX != "") {
       optional := `
-masq: ` + c.MASQ + `
-mtu_fix: ` + c.MTU_FIX
+  masq: ` + c.MASQ + `
+  mtu_fix: ` + c.MTU_FIX
       basic += optional
-   }
+    }
+
+    return basic
 }
 
 func init() {

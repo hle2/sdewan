@@ -46,7 +46,7 @@ const BYCONFIG = "%config"
 const ANY = "%any"
 const BASE_PROTOCOL = "TCP"
 const DEFAULT_K8S_API_SERVER_PORT = "6443"
-const ACCEPT='ACCEPT'
+const ACCEPT="ACCEPT"
 
 type OverlayObjectKey struct {
     OverlayName string `json:"overlay-name"`
@@ -340,8 +340,8 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         }
     // Todo: Hub-to-device connection
     case HUBTODEVICE:
-        obj1 := m1.(*module.HubOject)
-        obj2 := m2.(*module.DeviceOject)
+        obj1 := m1.(*module.HubObject)
+        obj2 := m2.(*module.DeviceObject)
 
         obj1_ip := obj1.Status.Ip
         obj2_ip := obj2.Status.Ip
@@ -362,7 +362,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             CryptoProposal: all_proposals,
         }
 
-        obj1_ipsec_resource := resource.IpsecResource{
+        obj1_ipsec_resource = resource.IpsecResource{
             Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
             Type: VTI_MODE,
             Remote: ANY,
@@ -373,10 +373,10 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             LocalIdentifier: obj1_ip,
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
-            Connections: conn,
+            Connections: obj1_conn,
         }
 
-        if not single_end:
+        if ! single_end {
             obj2_crt, obj2_key, err := GetDeviceCertificate(obj2.GetCertName(),namespace)
             if err != nil {
                 log.Println(err)
@@ -392,8 +392,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
                 LocalSourceIp: BYCONFIG, //Need to use const
                 CryptoProposal: all_proposals,
             }
-       
-            obj2_ipsec_resource := resource.IpsecResource{
+            obj2_ipsec_resource = resource.IpsecResource{
                 Name: strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)),
                 Type: VTI_MODE,
                 Remote: obj1_ip,
@@ -404,13 +403,13 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
                 LocalIdentifier: obj2_ip,
                 CryptoProposal: all_proposals,
                 ForceCryptoProposal: FORCECRYPTOPROPOSAL,
-                Connections: conn,
+                Connections: obj2_conn,
             }
-        
+    }
     //Todo: Device-to-device connection
     case DEVICETODEVICE:
-        obj1 := m1.(*module.DeviceOject)
-        obj2 := m2.(*module.DeviceOject)
+        obj1 := m1.(*module.DeviceObject)
+        obj2 := m2.(*module.DeviceObject)
 
         obj1_ip := obj1.Status.Ip
         obj2_ip := obj2.Status.Ip
@@ -468,13 +467,15 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
 
     cend1.AddResource(&obj1_ipsec_resource, false)
 
-    if not single_end:
+    if ! single_end {
         cend2.AddResource(&obj2_ipsec_resource, false)
+    }
 
     for i :=0; i < len(proposalresources); i++ {
         cend1.AddResource(proposalresources[i], true)
-        if not single_end:
+        if ! single_end {
             cend2.AddResource(proposalresources[i], true)
+        }
     }
 
     co := module.NewConnectionObject(cend1, cend2)
@@ -504,27 +505,27 @@ func (c *OverlayObjectManager) SetupHubProxy(m map[string]string, h module.Contr
     // IPsec rule
     c.SetupConnection(m, h, d, "HUBTODEVICE", namespace, true)
 
-    hub := h.(*module.HubOject)
-    device := d.(*module.DeviceOject)
+    hub := h.(*module.HubObject)
+    device := d.(*module.DeviceObject)
 
-    networks = []
+    networks := []string{}
 
     // DNAT rule
     hubZoneResource := resource.FirewallZoneResource{
         Name: strings.ToLower(strings.Replace(hub.Metadata.Name, "-", "", -1) + "_" + hub.GetIfName()),
-        Network: networks.append(hub.GetIfName()),
+        Network: append(networks, hub.GetIfName()),
         Input: ACCEPT,
         Output: ACCEPT,
         Forward: ACCEPT,
-        MASQ: '0',
-        MTU_FIX: '1',
+        MASQ: "0",
+        MTU_FIX: "1",
     }
 
     hubDnatResource := resource.FirewallDnatResource{
         Name: strings.ToLower(strings.Replace(hub.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(device.Metadata.Name, "-", "", -1)),
         Source: hubZoneResource.GetName(),
         SourceDestIP: hub.Status.Ip,
-        SourceDestPort: strconv.Itoa(device.Specification.ProxyHubPort)
+        SourceDestPort: strconv.Itoa(device.Specification.ProxyHubPort),
         DestinationIP: device.Status.Ip,
         DestinationPort: DEFAULT_K8S_API_SERVER_PORT,
         Protocol: BASE_PROTOCOL,
@@ -533,7 +534,7 @@ func (c *OverlayObjectManager) SetupHubProxy(m map[string]string, h module.Contr
     resutil := NewResUtil()
     resutil.AddResource(hub, "Create", &hubZoneResource)
     resutil.AddResource(hub, "Create", &hubDnatResource)
-    err := resutil.Deploy(hub.Metadata.Name + "Firewall", "YAML")
+    _, err := resutil.Deploy(hub.Metadata.Name + "Firewall", "YAML")
     if err != nil {
         return pkgerrors.Wrap(err, "Fail to deploy resource")
     }

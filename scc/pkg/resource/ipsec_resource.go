@@ -17,7 +17,6 @@
 package resource
 
 import (
-        "log"
         "strings"
 )
 
@@ -70,8 +69,9 @@ func (c *IpsecResource) GetType() string {
 func (c *IpsecResource) ToYaml() string {
         p := strings.Join(c.CryptoProposal, ",")
         pr := strings.Join(c.Connections.CryptoProposal, ",")
+	var connection = ""
 
-        if c.Connections.LocalSubnet {
+        if c.Connections.LocalSubnet != "" {
           base := `apiVersion: ` + SdewanApiVersion + ` 
 kind: IpsecSite
 metadata:
@@ -86,7 +86,7 @@ spec:
   force_crypto_proposal: "` + c.ForceCryptoProposal + `
   crypto_proposal: [` + p + `]`
 
-          connection := `
+          connection = `
   connections: 
   - name: ` + c.Connections.Name + `
     conn_type: ` + c.Connections.ConnectionType + `
@@ -96,7 +96,7 @@ spec:
     local_subnet: ` + c.Connections.LocalSubnet + `
     crypto_proposal: [` + pr +`]`
 
-          if c.Connections.RemoteSourceIp {
+          if c.Connections.RemoteSourceIp != "" {
             remote_source_ip := `
     remote_source_ip: ` + c.Connections.RemoteSourceIp
             connection += remote_source_ip
@@ -108,15 +108,16 @@ spec:
   local_private_cert: ` + c.PrivateCert + `
   shared_ca: ` + c.SharedCA + `
   local_identifier: ` + c.LocalIdentifier
+            return base + auth + connection
           } else if c.AuthenticationMethod == AuthTypePSK {
             auth := `
   pre_shared_key: ` + c.PresharedKey + `
   local_identifier: ` + c.LocalIdentifier
+            return base + auth + connection
           } else {
-            return 'Error in authentication method'
+            return "Error in authentication method"
           }
 
-          return base + auth + connection
         }
 
         base := `apiVersion: ` + SdewanApiVersion + ` 
@@ -133,8 +134,8 @@ spec:
   force_crypto_proposal: "` + c.ForceCryptoProposal + `"
   crypto_proposal: [` + p + `]`
 
-        if c.Connections.LocalSourceIp {
-          connection := `
+        if c.Connections.LocalSourceIp != "" {
+          connection = `
   connections: 
   - name: ` + c.Connections.Name + `
     conn_type: ` + c.Connections.ConnectionType + `
@@ -144,7 +145,7 @@ spec:
     local_source_ip: ` + c.Connections.LocalSourceIp + `
     crypto_proposal: [` + pr +`]`
         } else {
-          connection := `
+          connection = `
   connections: 
   - name: ` + c.Connections.Name + `
     conn_type: ` + c.Connections.ConnectionType + `
@@ -154,7 +155,7 @@ spec:
     crypto_proposal: [` + pr +`]`
         }
 
-        if c.Connections.RemoteSourceIp {
+        if c.Connections.RemoteSourceIp != "" {
           remote_source_ip := `
     remote_source_ip: ` + c.Connections.RemoteSourceIp
           connection += remote_source_ip
@@ -166,15 +167,16 @@ spec:
   local_private_cert: ` + c.PrivateCert + `
   shared_ca: ` + c.SharedCA + `
   local_identifier: ` + c.LocalIdentifier
+          return base + auth + connection
         } else if c.AuthenticationMethod == AuthTypePSK {
           auth := `
   pre_shared_key: ` + c.PresharedKey + `
   local_identifier: ` + c.LocalIdentifier
+          return base + auth + connection
         } else {
-          return 'Error in authentication method'
+          return "Error in authentication method"
         }
 
-        return base + auth + connection
 }
 
 func init() {

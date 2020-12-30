@@ -151,7 +151,7 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
 
     if len(hubs) > 0 && err == nil {
         for i := 0; i < len(hubs); i++ {
-            err := overlay.SetupConnection(m, t, hubs[i], HUBTOHUB, NameSpaceName)
+            err := overlay.SetupConnection(m, t, hubs[i], HUBTOHUB, NameSpaceName, false)
             if err != nil {
                 log.Println("Setup connection with " + hubs[i].(*module.HubObject).Metadata.Name + " failed.")
             }    
