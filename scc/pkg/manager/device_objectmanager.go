@@ -1,18 +1,18 @@
 /*
- * Copyright 2020 Intel Corporation, Inc
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* Copyright 2020 Intel Corporation, Inc
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 package manager
 
@@ -29,6 +29,9 @@ import (
 
     "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/client"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/resource"
+    "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/client"
     pkgerrors "github.com/pkg/errors"
 )
 
@@ -111,7 +114,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
 
     hub_manager := GetManagerset().Hub
     ipr_manager := GetManagerset().IPRange
-    overlay_namager := GetManagerset().Overlay
+    overlay_manager := GetManagerset().Overlay
     kubeutil := GetKubeConfigUtil()
 
     local_public_ips := to.Specification.PublicIps
@@ -120,7 +123,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         return pkgerrors.Wrap(err, "Fail to decode kubeconfig")
     }
 
-    if len(local_public_ips) > 0 && !to.Specification.ForceHubConnectivity {
+    if len(local_public_ips) > 0 {
         // Use public IP as external connection
         to.Status.Mode = 1
         
@@ -139,6 +142,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         // Use Hub as external connection
         to.Status.Mode = 2
 
+        /*
         // validate hub information
         if to.Specification.ProxyHub == "" {
             return pkgerrors.New("Hub information is missing")
@@ -165,6 +169,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         }
         // update hub object with proxy-port 
         proxy_hub_obj.SetProxyPort(to.Specification.ProxyHubPort, to.Metadata.Name)
+        */
 
         // allocate OIP for device
         overlay_name := m[OverlayResource]
@@ -177,13 +182,71 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         log.Println("Use overlay ip " + oip)
         to.Status.Ip = oip
 
+        // Get all proposal resources
+        proposal := GetManagerset().Proposal
+        proposals, err := proposal.GetObjects(m)
+        if len(proposals) == 0 || err != nil {
+            log.Println("Missing Proposal in the overlay\n")
+            log.Println(err)
+            return pkgerrors.New("Error in getting proposals")
+        }
+
+        var all_proposal []string
+        var proposalresource []*resource.ProposalResource
+        for i:= 0 ; i < len(proposals); i++ {
+            proposal_obj := proposals[i].(*module.ProposalObject)
+            all_proposal = append(all_proposal, proposal_obj.Metadata.Name)
+            // pr := resource.ProposalResource{proposals[i].(*module.ProposalObject).Metadata.Name, proposals[i].(*module.ProposalObject).Specification.Encryption, proposals[i].(*module.ProposalObject).Specification.Hash, proposals[i].(*module.ProposalObject).Specification.DhGroup}
+            pr := proposal_obj.ToResource()
+            proposalresource = append(proposalresource, pr)
+        }
+
+        //Extract SCC cert/key
+        cu = GetCertUtil()
+        crts, key, err := GetKeypair(SCCCertName, NameSpaceName)
+        root_ca := strings.SplitAfter(crts, "-----END CERTIFICATE-----")[1]
+        crt := strings.SplitAfter(crts, "-----END CERTIFICATE-----")[0]
+
+        // Build up ipsec resource
+        scc_conn := resource.Connection{
+            Name: DEFAULT_CONN,
+            ConnectionType: CONN_TYPE,
+            Mode: MODE,
+            Mark: DEFAULT_MARK,
+            RemoteSourceIp: oip,
+            LocalUpDown: DEFAULT_UPDOWN,
+            CryptoProposal: all_proposals,
+        }
+
+        scc_ipsec_resource = resource.IpsecResource{
+            Name: "localto" + strings.ToLower(strings.Replace(to.Metadata.Name, "-", "", -1)),
+            Type: VTI_MODE,
+            Remote: ANY,
+            AuthenticationMethod: PUBKEY_AUTH,
+            PublicCert: base64.StdEncoding.EncodeToString([]byte(crt)),
+            PrivateCert: base64.StdEncoding.EncodeToString([]byte(key)),
+            SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
+            LocalIdentifier: "CN="+ SCCCertName +"-cert",
+            RemoteIdentifier: "CN=" + 
+            CryptoProposal: all_proposals,
+            ForceCryptoProposal: FORCECRYPTOPROPOSAL,
+            Connections: scc_conn,
+        }
+
+        // Add and deploy resource
+        kubeclient := client.KubernetesClient
+        kubeclient.addResourceToLocal(&scc_ipsec_resource)
+        kubeclient.deployResourceToLocal()
+
+        /*
         // Deploy SNAT rule in Hub to enable k8s API access proxy to device
-        err = overlay_namager.SetupHubProxy(m, proxy_hub_obj, to, NameSpaceName)
+        err = overlay_manager.SetupHubProxy(m, proxy_hub_obj, to, NameSpaceName)
         if err != nil {
             proxy_hub_obj.UnsetProxyPort(to.Specification.ProxyHubPort)
             ipr_manager.Free(overlay_name, oip)
             return pkgerrors.Wrap(err, "Fail to Setup hub proxy for " + to.Metadata.Name)
         }
+        */
 
         // Check device availability
         hub_ips := []string{proxy_hub_obj.Status.Ip}
@@ -204,8 +267,11 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         if err != nil {
             log.Println(err)
         }
+
+        /*
         // save proxy hub information
         _, err = GetDBUtils().UpdateObject(hub_manager, hm, proxy_hub_obj)
+        */
     }
 
     return nil

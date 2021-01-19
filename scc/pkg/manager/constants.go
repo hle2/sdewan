@@ -21,6 +21,7 @@ const (
     RootIssuerName = "sdewan-controller"
     RootCAIssuerName = "sdewan-controller-ca"
     RootCertName = "sdewan-controller"
+    SCCCertName = "sdewan-controller-base"
     StoreName = "centralcontroller"
     OverlayCollection = "overlays"
     OverlayResource = "overlay-name"

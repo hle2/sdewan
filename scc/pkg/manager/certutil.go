@@ -31,6 +31,8 @@ import (
     v1beta1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1beta1"
 )
 
+const SELFSIGNEDCA = "sdewan-controller"
+
 type CertUtil struct {
     client certmanagerv1beta1.CertmanagerV1beta1Interface
     k8sclient corev1.CoreV1Interface
@@ -203,4 +205,9 @@ func (c *CertUtil) GetKeypair(certname string, namespace string) (string, string
     }
 
     return string(secret.Data["tls.crt"]), string(secret.Data["tls.key"]), nil
+}
+
+func (c *CertUtil) GetSelfSignedCA() (string) {
+    ca, _, _ = c.GetKeypair(RootCertName, NameSpaceName)
+    return ca
 }

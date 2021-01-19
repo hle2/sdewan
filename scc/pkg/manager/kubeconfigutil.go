@@ -138,4 +138,3 @@ func (c *KubeConfigUtil)checkKubeConfigAvail(conf []byte, ips []string, port str
     }
     return []byte(""), "", pkgerrors.New("No public ip found workable for the cluster")
 }
-

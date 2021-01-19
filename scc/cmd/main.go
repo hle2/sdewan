@@ -75,6 +75,10 @@ func main() {
                     if err == nil {
                         log.Println("SDEWAN root ca issuer is available : " + manager.RootCAIssuerName)
                     }
+                    _, err = cu.CreateCertificate(manager.SCCCertName, manager.NameSpaceName, manager.RootCAIssuerName, false)
+                    if err == nil {
+                        log.Println("SDEWAN central controller base certificates is available : " + manager.SCCCertName)
+                    }
                 }
             }
         }
