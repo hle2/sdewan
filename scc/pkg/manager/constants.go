@@ -35,4 +35,6 @@ const (
     DeviceResource = "device-name"
     IPRangeCollection = "ipranges"
     IPRangeResource = "iprange-name"
+    CertCollection = "certificates"
+    CertResource = "certificate-name"
 )

@@ -14,22 +14,29 @@
  * limitations under the License.
  */
 
-package manager
+package module
 
-type Managerset struct {
-    Overlay *OverlayObjectManager
-    Proposal *ProposalObjectManager
-    Hub *HubObjectManager
-    HubConn *HubConnObjectManager
-    HubDevice *HubDeviceObjectManager
-    Device *DeviceObjectManager
-    DeviceConn *DeviceConnObjectManager
-    IPRange *IPRangeObjectManager
-    Cert *CertificateObjectManager
+// App contains metadata for Apps
+type CertificateObject struct {
+	Metadata ObjectMetaData `json:"metadata"`
+	Specification CertificateObjectSpec `json:"spec"`
+	Data CertificateObjectData `json:"data"`
 }
 
-var mgrset = Managerset{}
+// CertificateObjectSpec contains the parameters
+type CertificateObjectSpec struct {
+}
 
-func GetManagerset() *Managerset {
-    return &mgrset
+type CertificateObjectData struct {
+	RootCA  string `json:"rootca"`
+	Ca string `json:"ca"`
+    Key string `json:"key"`
+}
+
+func (c *CertificateObject) GetMetadata() ObjectMetaData {
+	return c.Metadata
+}
+
+func (c *CertificateObject) GetType() string {
+    return "Certificate"
 }

@@ -66,7 +66,8 @@ func NewRouter(
     hubDeviceObjectClient manager.ControllerObjectManager,
     deviceObjectClient manager.ControllerObjectManager,
     deviceConnObjectClient manager.ControllerObjectManager,
-    ipRangeObjectClient manager.ControllerObjectManager) *mux.Router {
+    ipRangeObjectClient manager.ControllerObjectManager,
+    certificateObjectClient manager.ControllerObjectManager) *mux.Router {
 
     router := mux.NewRouter()
     ver := "v1"
@@ -134,11 +135,19 @@ func NewRouter(
     mgrset.IPRange = ipRangeObjectClient.(*manager.IPRangeObjectManager)
     createHandlerMapping(ipRangeObjectClient, olRouter, manager.IPRangeCollection, manager.IPRangeResource)
 
+    // certificate API
+    if certificateObjectClient == nil {
+         certificateObjectClient = manager.NewCertificateObjectManager()
+    }
+    mgrset.Cert = certificateObjectClient.(*manager.CertificateObjectManager)
+    createHandlerMapping(certificateObjectClient, olRouter, manager.CertCollection, manager.CertResource)
+
     // Add depedency
     overlayObjectClient.AddOwnResManager(proposalObjectClient)
     overlayObjectClient.AddOwnResManager(hubObjectClient)
     overlayObjectClient.AddOwnResManager(deviceObjectClient)
     overlayObjectClient.AddOwnResManager(ipRangeObjectClient)
+    overlayObjectClient.AddOwnResManager(certificateObjectClient)
     hubObjectClient.AddOwnResManager(hubDeviceObjectClient)
     deviceObjectClient.AddOwnResManager(hubDeviceObjectClient)
 
@@ -146,6 +155,7 @@ func NewRouter(
     hubObjectClient.AddDepResManager(overlayObjectClient)
     deviceObjectClient.AddDepResManager(overlayObjectClient)
     ipRangeObjectClient.AddDepResManager(overlayObjectClient)
+    certificateObjectClient.AddDepResManager(overlayObjectClient)
     hubDeviceObjectClient.AddDepResManager(hubObjectClient)
     hubDeviceObjectClient.AddDepResManager(deviceObjectClient)
     hubConnObjectClient.AddDepResManager(hubObjectClient)
