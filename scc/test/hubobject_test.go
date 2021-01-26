@@ -26,15 +26,15 @@ func TestMain(m *testing.M) {
             fmt.Println(err)
     }
     encoded_config_a := base64.StdEncoding.EncodeToString([]byte(kube_config_A))
-    /*
+    
     kube_config_B, err := ioutil.ReadFile("admin.conf")
     encoded_config_b := base64.StdEncoding.EncodeToString([]byte(kube_config_B))
-    */
+    
 
     var publicIpA []string
     var publicIpB []string
-    publicIpA = append(publicIpA, "192.168.121.23")
-    publicIpB = append(publicIpB, "192.168.121.28")
+    publicIpA = append(publicIpA, "10.10.10.35")
+    publicIpB = append(publicIpB, "10.10.10.16")
 
     var object1 = module.OverlayObject{
         Metadata: module.ObjectMetaData{"overlay1", "", "", ""}, 
@@ -47,20 +47,21 @@ func TestMain(m *testing.M) {
         Specification: module.ProposalObjectSpec{"aes256", "sha256", "modp3072"}}
     var object2 = module.HubObject{
         Metadata: module.ObjectMetaData{"huba", "", "", ""},
-        Specification: module.HubObjectSpec{publicIpA, "192.168.121.23", encoded_config_a}}
-    /*var object3 = module.HubObject{
-        Metadata: module.ObjectMetaData{"hubB", "", "", ""}, 
-        Specification: module.HubObjectSpec{publicIpB, "192.168.121.28", encoded_config_b}}*/
+        Specification: module.HubObjectSpec{publicIpA, "10.10.10.35", encoded_config_a}}
+    var object3 = module.HubObject{
+        Metadata: module.ObjectMetaData{"hubb", "", "", ""}, 
+        Specification: module.HubObjectSpec{publicIpB, "10.10.10.16", encoded_config_b}}
 
     createControllerObject(OverlayUrl, &object1, &module.OverlayObject{})
     createControllerObject(ProposalUrl, &objecta, &module.ProposalObject{})
     createControllerObject(ProposalUrl, &objectb, &module.ProposalObject{})
     createControllerObject(BaseUrl, &object2, &module.HubObject{})
-    //createControllerObject(BaseUrl, &object3, &module.HubObject{})
+    createControllerObject(BaseUrl, &object3, &module.HubObject{})
 
     var ret = m.Run()
 
     deleteControllerObject(BaseUrl, "huba")
+    deleteControllerObject(BaseUrl, "hubb")
     deleteControllerObject(ProposalUrl, "proposal2")
     deleteControllerObject(ProposalUrl, "proposal1")
     deleteControllerObject(OverlayUrl, "overlay1")

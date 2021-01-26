@@ -208,6 +208,6 @@ func (c *CertUtil) GetKeypair(certname string, namespace string) (string, string
 }
 
 func (c *CertUtil) GetSelfSignedCA() (string) {
-    ca, _, _ = c.GetKeypair(RootCertName, NameSpaceName)
+	ca, _, _ := c.GetKeypair(RootCertName, NameSpaceName)
     return ca
 }

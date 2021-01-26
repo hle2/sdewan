@@ -38,7 +38,6 @@ type HubObjectSpec struct {
 	PublicIps    	[]string 	`json:"publicIps"`
 	CertificateId 	string 		`json:"certificateId"`
 	KubeConfig 		string 		`json:"kubeConfig"`
-	IfName          string      `json:"ifname"`
 }
 
 //HubObjectStatus
@@ -91,9 +90,10 @@ func (c *HubObject) AllocateProxyPort() (int, error) {
 	return 0, pkgerrors.New("Fail to allocate proxy port")
 }
 
+/*
 func (c *HubObject) GetIfName() string {
 	return c.Specification.IfName
-}
+}*/
 
 func init() {
 	GetObjectBuilder().Register("Hub", &HubObject{})

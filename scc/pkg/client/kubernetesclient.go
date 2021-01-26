@@ -140,7 +140,3 @@ func (c *KubernetesClient) IsReachable() bool {
     return true
 }
 
-func (c *KubernetesClient) addResourceToLocal(resource resource.ISdewanResource) error {
-    
-}
-func (c *KubernetesClient) deployResourceToLocal()

@@ -20,7 +20,7 @@ import (
     "io"
     "log"
     "strings"
-    "strconv"
+    //"strconv"
     "encoding/json"
     "encoding/base64"
     "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
@@ -120,9 +120,9 @@ func (c *OverlayObjectManager) CreateObject(m map[string]string, t module.Contro
     resutil := NewResUtil()
 
     deviceObject := module.OverlayObject{
-        Metadata: module.ObjectMetaData{"local", "", "", ""}, 
-        Specification: module.OverlayObjectSpec{}
-    }
+        Metadata: module.ObjectMetaData{"local", "", "", ""},
+        Specification: module.OverlayObjectSpec{}}
+
     resutil.AddResource(&deviceObject, "Create", &resource.FileResource{"mycm", "ConfigMap", "mycm.yaml"})
 
     _, err2 := resutil.Deploy("test-app", "YAML")
@@ -280,8 +280,11 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
     //Get the overlay cert
     var root_ca string
 
-    cu = GetCertUtil()
-    root_ca, _, _ = cu.GetSelfSignedCA()
+    cu, err := GetCertUtil()
+    if err != nil {
+	    log.Println(err)
+    }
+    root_ca = cu.GetSelfSignedCA()
     interim_ca, _, _ := c.GetCertificate(m[OverlayResource])
 
     root_ca += interim_ca
@@ -327,6 +330,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj1_key)),
             SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
             LocalIdentifier: "CN="+obj1.Metadata.Name+"-cert",
+            RemoteIdentifier: "CN="+obj2.Metadata.Name+"-cert",
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: conn,
@@ -340,6 +344,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj2_key)),
             SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
             LocalIdentifier: "CN="+obj2.Metadata.Name+"-cert",
+            RemoteIdentifier: "CN="+obj1.Metadata.Name+"-cert",
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: conn,
@@ -377,13 +382,14 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj1_key)),
             SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
             LocalIdentifier: "CN="+obj1.Metadata.Name+"-cert",
+            RemoteIdentifier: "CN="+obj2.Metadata.Name+"-cert",
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: obj1_conn,
         }
 
 
-        obj2_crt, obj2_key, err := GetDeviceCertificate(obj2.GetCertName(),namespace)
+        obj2_crt, obj2_key, err := GetDeviceCertificate(m[OverlayResource], obj2.Metadata.Name)
         if err != nil {
             log.Println(err)
         }
@@ -407,6 +413,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj2_key)),
             SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
             LocalIdentifier: "CN="+obj2.Metadata.Name+"-cert",
+            RemoteIdentifier: "CN="+obj1.Metadata.Name+"-cert",
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: obj2_conn,
@@ -421,11 +428,11 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         obj2_ip := obj2.Status.Ip
 
         //Keypair
-        obj1_crt, obj1_key, err := GetDeviceCertificate(obj1.GetCertName(),namespace)
+        obj1_crt, obj1_key, err := GetDeviceCertificate(m[OverlayResource], obj1.Metadata.Name)
         if err != nil {
             log.Println(err)
         }
-        obj2_crt, obj2_key, err := GetDeviceCertificate(obj2.GetCertName(),namespace)
+        obj2_crt, obj2_key, err := GetDeviceCertificate(m[OverlayResource], obj2.Metadata.Name)
         if err != nil {
             log.Println(err)
         }
@@ -502,9 +509,10 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
     return nil
 }
 
+/*
 func (c *OverlayObjectManager) SetupHubProxy(m map[string]string, h module.ControllerObject, d module.ControllerObject, namespace string) error {
     // IPsec rule
-    c.SetupConnection(m, h, d, "HUBTODEVICE", namespace, true)
+    c.SetupConnection(m, h, d, "HUBTODEVICE", namespace)
 
     hub := h.(*module.HubObject)
     device := d.(*module.DeviceObject)
@@ -542,3 +550,4 @@ func (c *OverlayObjectManager) SetupHubProxy(m map[string]string, h module.Contr
 
     return nil
 }
+*/
