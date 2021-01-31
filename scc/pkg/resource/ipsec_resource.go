@@ -81,7 +81,7 @@ metadata:
     sdewanPurpose: ` + SdewanPurpose + `
 spec:
   type: ` + c.Type + `
-  remote: ` + c.Remote + `
+  remote: '` + c.Remote + `'
   authentication_method: `+ c.AuthenticationMethod + `
   force_crypto_proposal: "` + c.ForceCryptoProposal + `
   crypto_proposal: [` + p + `]`
@@ -129,7 +129,7 @@ metadata:
     sdewanPurpose: ` + SdewanPurpose + `
 spec:
   type: ` + c.Type + `
-  remote: ` + c.Remote + `
+  remote: '` + c.Remote + `'
   authentication_method: `+ c.AuthenticationMethod +`
   force_crypto_proposal: "` + c.ForceCryptoProposal + `"
   crypto_proposal: [` + p + `]`

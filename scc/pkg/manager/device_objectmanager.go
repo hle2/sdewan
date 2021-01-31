@@ -34,6 +34,8 @@ import (
     pkgerrors "github.com/pkg/errors"
 )
 
+const SCC_RESOURCE = "scc_ipsec_resource"
+
 type DeviceObjectKey struct {
     OverlayName string `json:"overlay-name"`
     DeviceName string `json:"device-name"`
@@ -204,8 +206,10 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
 		log.Println("Getting certutil error")
 	}
         crts, key, err := cu.GetKeypair(SCCCertName, NameSpaceName)
-        root_ca := strings.SplitAfter(crts, "-----END CERTIFICATE-----")[1]
+        root_ca := cu.GetSelfSignedCA()
+	log.Println("Root_CA: " + root_ca)
         crt := strings.SplitAfter(crts, "-----END CERTIFICATE-----")[0]
+	log.Println("SCC_Cert: " + crt)
 
         // Build up ipsec resource
         scc_conn := resource.Connection{
@@ -238,13 +242,11 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         // Add and deploy resource
         resutil := NewResUtil()
         resutil.AddResource(&scc, "create", &scc_ipsec_resource)
-        _, err = resutil.Deploy("localto" + to.Metadata.Name, "YAML")
+        resutil.Deploy("localto" + to.Metadata.Name, "YAML")
 
         //Reserve ipsec resource to device object
-        r := make(map[string]string)
         res_str, err := resource.GetResourceBuilder().ToString(&scc_ipsec_resource)
-        r["scc_ipsec_resource"] = res_str
-        to.Status.Data = r
+        to.Status.Data[SCC_RESOURCE] = res_str
 
         /*
         // Deploy SNAT rule in Hub to enable k8s API access proxy to device
@@ -291,6 +293,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
                 kube_config, _, err := kubeutil.checkKubeConfigAvail(kube_config, ips, DEFAULT_K8S_API_SERVER_PORT)
                 if err != nil {
                     log.Println("Waiting for scc connection to be set up.")
+		    return false, nil
                 }
                 // Set new kubeconfig in device
                 // Todo: to set kubeconfig even when timeout
@@ -301,7 +304,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
 
         if err != nil {
             log.Println(err)
-            return pkgerrors.Wrap(err, "Fail to connect to scc.")
+            return pkgerrors.Wrap(err, "Fail to connect to device.")
         }
 
         /*
@@ -322,17 +325,6 @@ func (c *DeviceObjectManager) CreateObject(m map[string]string, t module.Control
     overlay_manager := GetManagerset().Overlay
 
     to := t.(*module.DeviceObject)
-    overlay_name := m[OverlayResource]
-    device_name := to.Metadata.Name
-    
-    //Create cert for ipsec connection
-    log.Println("Create Certificate: " + device_name + "-cert")
-    cert := GetManagerset().Cert
-    _, _, _, err = cert.GetOrCreateDC(overlay_name, device_name)
-    if err != nil {
-        log.Println(err)
-        return t, err
-    }
 
     devices, err := c.GetObjects(m)
     if err != nil {
