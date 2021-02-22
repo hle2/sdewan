@@ -230,8 +230,8 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
             PublicCert: base64.StdEncoding.EncodeToString([]byte(crt)),
             PrivateCert: base64.StdEncoding.EncodeToString([]byte(key)),
             SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
-            LocalIdentifier: "CN="+ SCCCertName + "-cert",
-            RemoteIdentifier: "CN=" + to.Metadata.Name + "-cert",
+            LocalIdentifier: "CN="+ SCCCertName,
+            RemoteIdentifier: "CN=device-" + to.Metadata.Name + "-cert",
             CryptoProposal: all_proposal,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: scc_conn,
@@ -242,7 +242,11 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         // Add and deploy resource
         resutil := NewResUtil()
         resutil.AddResource(&scc, "create", &scc_ipsec_resource)
+	for i :=0; i < len(proposalresource); i++ {
+		resutil.AddResource(&scc, "create", proposalresource[i])
+        }
         resutil.Deploy("localto" + to.Metadata.Name, "YAML")
+
 
         //Reserve ipsec resource to device object
         res_str, err := resource.GetResourceBuilder().ToString(&scc_ipsec_resource)
