@@ -127,7 +127,8 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
     if err == nil {
         log.Println("Verified public ip " + local_public_ip)
         to.Status.Ip = local_public_ip
-        err := GetDBUtils().RegisterDevice(hub_name, config)
+	to.Specification.KubeConfig = base64.StdEncoding.EncodeToString(config)
+        err := GetDBUtils().RegisterDevice(hub_name, to.Specification.KubeConfig)
         if err != nil {
             log.Println(err)
         }

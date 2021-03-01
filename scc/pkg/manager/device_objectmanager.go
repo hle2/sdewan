@@ -125,7 +125,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
     if len(local_public_ips) > 0{
         // Use public IP as external connection
         to.Status.Mode = 1
-        
+
         kube_config, local_public_ip, err := kubeutil.checkKubeConfigAvail(kube_config, local_public_ips, "6443")
         if err != nil {
             return pkgerrors.Wrap(err, "Fail to verify public ip")
@@ -195,7 +195,6 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         for i:= 0 ; i < len(proposals); i++ {
             proposal_obj := proposals[i].(*module.ProposalObject)
             all_proposal = append(all_proposal, proposal_obj.Metadata.Name)
-            // pr := resource.ProposalResource{proposals[i].(*module.ProposalObject).Metadata.Name, proposals[i].(*module.ProposalObject).Specification.Encryption, proposals[i].(*module.ProposalObject).Specification.Hash, proposals[i].(*module.ProposalObject).Specification.DhGroup}
             pr := proposal_obj.ToResource()
             proposalresource = append(proposalresource, pr)
         }
@@ -207,9 +206,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
 	}
         crts, key, err := cu.GetKeypair(SCCCertName, NameSpaceName)
         root_ca := cu.GetSelfSignedCA()
-	log.Println("Root_CA: " + root_ca)
         crt := strings.SplitAfter(crts, "-----END CERTIFICATE-----")[0]
-	log.Println("SCC_Cert: " + crt)
 
         // Build up ipsec resource
         scc_conn := resource.Connection{
@@ -301,7 +298,12 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
                 }
                 // Set new kubeconfig in device
                 // Todo: to set kubeconfig even when timeout
-                to.Specification.KubeConfig = base64.StdEncoding.EncodeToString([]byte(kube_config))
+                to.Specification.KubeConfig = base64.StdEncoding.EncodeToString(kube_config)
+		err = GetDBUtils().RegisterDevice(to.Metadata.Name, to.Specification.KubeConfig)
+		if err != nil {
+			log.Println(err)
+		}
+		log.Println("scc connection is verified.")
                 return true, nil
             },
         )
@@ -329,6 +331,7 @@ func (c *DeviceObjectManager) CreateObject(m map[string]string, t module.Control
     overlay_manager := GetManagerset().Overlay
 
     to := t.(*module.DeviceObject)
+    log.Println("Registering device " + to.Metadata.Name + " ... ")
 
     devices, err := c.GetObjects(m)
     if err != nil {
@@ -451,7 +454,7 @@ func GetDeviceCertificate(overlay_name string, device_name string)(string, strin
         log.Println("Error in get cert for device ...")
             return "", "", err
     }
-    
+
     crt := strings.SplitAfter(crts, "-----END CERTIFICATE-----")[0]
     return crt, key, nil
 }

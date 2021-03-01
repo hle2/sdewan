@@ -98,7 +98,7 @@ spec:
 
           if c.Connections.RemoteSourceIp != "" {
             remote_source_ip := `
-    remote_source_ip: ` + c.Connections.RemoteSourceIp
+    remote_source_ip: '` + c.Connections.RemoteSourceIp + `'`
             connection += remote_source_ip
           }
 
@@ -144,7 +144,7 @@ spec:
     mode: ` +  c.Connections.Mode + `
     mark: "` +  c.Connections.Mark + `"
     local_updown: ` + c.Connections.LocalUpDown + `
-    local_sourceip: ` + c.Connections.LocalSourceIp + `
+    local_sourceip: '` + c.Connections.LocalSourceIp + `'
     crypto_proposal: [` + pr +`]`
         } else {
           connection = `
@@ -159,7 +159,7 @@ spec:
 
         if c.Connections.RemoteSourceIp != "" {
           remote_source_ip := `
-    remote_sourceip: ` + c.Connections.RemoteSourceIp
+    remote_sourceip: '` + c.Connections.RemoteSourceIp + `'`
           connection += remote_source_ip
         }
 

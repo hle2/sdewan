@@ -17,7 +17,6 @@
 package manager
 
 import (
-    "encoding/base64"
     "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
     rsync "github.com/open-ness/EMCO/src/rsync/pkg/db"
@@ -159,10 +158,10 @@ func (d *DBUtils) DeleteObject(c ControllerObjectManager, m map[string]string) e
     return nil
 }
 
-func (d *DBUtils) RegisterDevice(cluster_name string, kubeconfig_file []byte) error {
+func (d *DBUtils) RegisterDevice(cluster_name string, kubeconfig string) error {
     ccc := rsync.NewCloudConfigClient()
 
-    _, err := ccc.CreateCloudConfig(PROVIDERNAME, cluster_name, "0", "sdewan-system", base64.StdEncoding.EncodeToString(kubeconfig_file))
+    _, err := ccc.CreateCloudConfig(PROVIDERNAME, cluster_name, "0", "sdewan-system", kubeconfig)
     if err != nil {
         return pkgerrors.Wrap(err, "Error creating cloud config")
     }
