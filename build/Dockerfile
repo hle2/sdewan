@@ -7,7 +7,10 @@
 # http://www.apache.org/licenses/LICENSE-2.0
 ##############################################################################
 
-FROM golang:1.14.1
+FROM golang:1.14.1-alpine
+
+RUN apk update \
+    && apk add --no-cache make
 
 WORKDIR /go/src/github.com/central-controller
 COPY ./ ./
@@ -15,11 +18,12 @@ RUN cd src/scc && make all
 RUN cd src/rsync && make all
 RUN cd src/monitor && make all
 
-FROM ubuntu:16.04
+FROM alpine:3.12
 
 WORKDIR /opt/scc
-RUN groupadd -r scc && useradd -r -g scc scc
+RUN addgroup -S scc && adduser -S -G scc scc
 RUN chown scc:scc /opt/scc -R
+
 COPY --chown=scc --from=0 /go/src/github.com/central-controller/src/scc/scc ./
 COPY --chown=scc --from=0 /go/src/github.com/central-controller/src/rsync/rsync ./
 COPY --chown=scc --from=0 /go/src/github.com/central-controller/src/monitor/monitor ./

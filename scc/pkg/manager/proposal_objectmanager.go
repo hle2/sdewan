@@ -98,40 +98,6 @@ func (c *ProposalObjectManager) ParseObject(r io.Reader) (module.ControllerObjec
 }
 
 func (c *ProposalObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-    // for certificate test
-    overlay := GetManagerset().Overlay
-    to := t.(*module.ProposalObject)
-    pname := to.Metadata.Name
-    oname := m[OverlayResource]
-    log.Println("Create Certificate: " + pname + "-cert")
-    crt, key, _:= overlay.CreateCertificate(oname, pname + "-cert")
-    log.Println("Crt: \n" + crt)
-    log.Println("Key: \n" + key)
-
-    // for ip range test
-    iprange := GetManagerset().IPRange
-    var nip string
-    var ip [5]string
-    var err error
-    for i:=0; i<5; i++ {
-        ip[i], err = iprange.Allocate(oname, "Dev1")
-        if err != nil {
-            log.Println(err)
-        } else {
-            log.Println("Allocated IP: " + ip[i])
-        }
-    }
-    
-    log.Println("Free IP: " + ip[2])
-    iprange.Free(oname, ip[2])
-
-    nip, err = iprange.Allocate(oname, "Dev1")
-    if err != nil {
-        log.Println(err)
-    } else {
-        log.Println("Allocated IP: " + nip)
-    }
-
     // DB Operation
     t, err = GetDBUtils().CreateObject(c, m, t)
 
@@ -160,17 +126,6 @@ func (c *ProposalObjectManager) UpdateObject(m map[string]string, t module.Contr
 }
 
 func (c *ProposalObjectManager) DeleteObject(m map[string]string) error {
-    // for certificate test
-    overlay := GetManagerset().Overlay
-    pname := m[ProposalResource]
-    log.Println("Delete Certificate: " + pname + "-cert")
-    overlay.DeleteCertificate(pname + "-cert")
-
-    // for ip range test
-    iprange := GetManagerset().IPRange
-    oname := m[OverlayResource]
-    iprange.FreeAll(oname)
-
     // DB Operation
     err := GetDBUtils().DeleteObject(c, m)
 

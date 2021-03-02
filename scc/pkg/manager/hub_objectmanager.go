@@ -116,18 +116,19 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
     var config []byte
     config, err := base64.StdEncoding.DecodeString(to.Specification.KubeConfig)
     if err != nil {
-            log.Println(err)
-            return t, err
+        log.Println(err)
+        return t, err
     }
 
     local_public_ips := to.Specification.PublicIps
-    log.Println("public ips: %+v", local_public_ips)
+    log.Println("Hub public ips: %+v", local_public_ips)
+
     kubeutil := GetKubeConfigUtil()
     config, local_public_ip, err = kubeutil.checkKubeConfigAvail(config, local_public_ips, DEFAULTPORT)
     if err == nil {
-        log.Println("Verified public ip " + local_public_ip)
+        log.Println("Public IP address verified: " + local_public_ip)
         to.Status.Ip = local_public_ip
-	to.Specification.KubeConfig = base64.StdEncoding.EncodeToString(config)
+	    to.Specification.KubeConfig = base64.StdEncoding.EncodeToString(config)
         err := GetDBUtils().RegisterDevice(hub_name, to.Specification.KubeConfig)
         if err != nil {
             log.Println(err)
@@ -231,7 +232,6 @@ func GetHubCertificate(cert_name string, namespace string)(string, string, error
     } else {
         ready := cu.IsCertReady(cert_name, namespace)
         if ready != true {
-            log.Println("Cert for hub is not ready")
             return "", "", pkgerrors.New("Cert for hub is not ready")
         } else {
             crts, key, err := cu.GetKeypair(cert_name, namespace)

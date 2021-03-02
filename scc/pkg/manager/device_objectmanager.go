@@ -138,37 +138,8 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         // Set new kubeconfig in device
         to.Specification.KubeConfig = base64.StdEncoding.EncodeToString([]byte(kube_config))
     } else {
-        // Use Hub as external connection
+        // Use scc as external connection
         to.Status.Mode = 2
-
-        /*
-        // validate hub information
-        if to.Specification.ProxyHub == "" {
-            return pkgerrors.New("Hub information is missing")
-        }
-
-        hm := make(map[string]string)
-        hm[OverlayResource] = m[OverlayResource]
-        hm[HubResource] = to.Specification.ProxyHub
-        proxy_hub, err := hub_manager.GetObject(hm)
-        if err != nil {
-            return pkgerrors.Wrap(err, "Fail to get ProxyHub " + to.Specification.ProxyHub)
-        }
-        proxy_hub_obj := proxy_hub.(*module.HubObject)
-
-        if to.Specification.ProxyHubPort == 0 {
-            to.Specification.ProxyHubPort, err = proxy_hub_obj.AllocateProxyPort()
-            if err != nil {
-                return pkgerrors.Wrap(err, "Fail in " + to.Specification.ProxyHub)
-            }
-        } else {
-            if proxy_hub_obj.IsProxyPortUsed(to.Specification.ProxyHubPort) {
-                return pkgerrors.New("Proxy port is in-used")
-            }
-        }
-        // update hub object with proxy-port 
-        proxy_hub_obj.SetProxyPort(to.Specification.ProxyHubPort, to.Metadata.Name)
-        */
 
         // allocate OIP for device
         overlay_name := m[OverlayResource]
@@ -178,7 +149,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         }
 
         // Set OIP in Device
-        log.Println("Use overlay ip " + oip)
+        log.Println("Using overlay ip " + oip)
         to.Status.Ip = oip
 
         // Get all proposal resources
@@ -200,10 +171,10 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         }
 
         //Extract SCC cert/key
-	cu, err := GetCertUtil()
-	if err != nil {
-		log.Println("Getting certutil error")
-	}
+	    cu, err := GetCertUtil()
+	    if err != nil {
+		  log.Println("Getting certutil error")
+	    }
         crts, key, err := cu.GetKeypair(SCCCertName, NameSpaceName)
         root_ca := cu.GetSelfSignedCA()
         crt := strings.SplitAfter(crts, "-----END CERTIFICATE-----")[0]
@@ -219,7 +190,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
             CryptoProposal: all_proposal,
         }
 
-	scc_ipsec_resource := resource.IpsecResource{
+	    scc_ipsec_resource := resource.IpsecResource{
             Name: "localto" + strings.ToLower(strings.Replace(to.Metadata.Name, "-", "", -1)),
             Type: VTI_MODE,
             Remote: ANY,
@@ -239,8 +210,8 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         // Add and deploy resource
         resutil := NewResUtil()
         resutil.AddResource(&scc, "create", &scc_ipsec_resource)
-	for i :=0; i < len(proposalresource); i++ {
-		resutil.AddResource(&scc, "create", proposalresource[i])
+	    for i :=0; i < len(proposalresource); i++ {
+		  resutil.AddResource(&scc, "create", proposalresource[i])
         }
         resutil.Deploy("localto" + to.Metadata.Name, "YAML")
 
@@ -249,61 +220,24 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         res_str, err := resource.GetResourceBuilder().ToString(&scc_ipsec_resource)
         to.Status.Data[SCC_RESOURCE] = res_str
 
-        /*
-        // Deploy SNAT rule in Hub to enable k8s API access proxy to device
-        err = overlay_manager.SetupHubProxy(m, proxy_hub_obj, to, NameSpaceName)
-        if err != nil {
-            proxy_hub_obj.UnsetProxyPort(to.Specification.ProxyHubPort)
-            ipr_manager.Free(overlay_name, oip)
-            return pkgerrors.Wrap(err, "Fail to Setup hub proxy for " + to.Metadata.Name)
-        }
-        */
-
-        // Check device availability
-        //hub_ips := []string{proxy_hub_obj.Status.Ip}
-        /*local_cnf_ip := kubeclient.getLocalCNFAddress()
-        local_device_proxy_port := kubeclient.AllocateProxyPort()
-        networks := []string{}
-
-        // DNAT rule
-        localZoneResource := resource.FirewallZoneResource{
-            Name: "local_" + kubeclient.GetLocalIfName()),
-            Network: append(networks, kubeclient.GetLocalIfName()),
-            Input: ACCEPT,
-            Output: ACCEPT,
-            Forward: ACCEPT,
-            MASQ: "0",
-            MTU_FIX: "1",
-        }
-
-        localDnatResource := resource.FirewallDnatResource{
-            Name: "localto" + strings.ToLower(strings.Replace(to.Metadata.Name, "-", "", -1)),
-            Source: localZoneResource.GetName(),
-            SourceDestIP: local_cnf_ip,
-            SourceDestPort: strconv.Itoa(local_device_proxy_port),
-            DestinationIP: to.Status.Ip,
-            DestinationPort: DEFAULT_K8S_API_SERVER_PORT,
-            Protocol: BASE_PROTOCOL,
-        }
-        */
         var ips []string
-	ips = append(ips, oip)
+	    ips = append(ips, oip)
 
         err = wait.PollImmediate(time.Second*5, time.Second*30,
             func() (bool, error) {
                 kube_config, _, err := kubeutil.checkKubeConfigAvail(kube_config, ips, DEFAULT_K8S_API_SERVER_PORT)
                 if err != nil {
                     log.Println("Waiting for scc connection to be set up.")
-		    return false, nil
+		            return false, nil
                 }
                 // Set new kubeconfig in device
                 // Todo: to set kubeconfig even when timeout
                 to.Specification.KubeConfig = base64.StdEncoding.EncodeToString(kube_config)
-		err = GetDBUtils().RegisterDevice(to.Metadata.Name, to.Specification.KubeConfig)
-		if err != nil {
-			log.Println(err)
-		}
-		log.Println("scc connection is verified.")
+		        err = GetDBUtils().RegisterDevice(to.Metadata.Name, to.Specification.KubeConfig)
+		        if err != nil {
+			        log.Println(err)
+		        }
+		        log.Println("scc connection is verified.")
                 return true, nil
             },
         )
@@ -312,11 +246,6 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
             log.Println(err)
             return pkgerrors.Wrap(err, "Fail to connect to device.")
         }
-
-        /*
-        // save proxy hub information
-        _, err = GetDBUtils().UpdateObject(hub_manager, hm, proxy_hub_obj)
-        */
     }
     return nil
 
@@ -388,22 +317,11 @@ func (c *DeviceObjectManager) DeleteObject(m map[string]string) error {
     overlay_name := m[OverlayResource]
     device_name := m[DeviceResource]
 
-    // Reset all IpSec connection setup by this device
-    /*
-    conns, err := conn_manager.GetObjects(overlay_name, module.CreateEndName(t.GetType(), device_name))
-    if err != nil {
-        log.Println(err)
-    } else {
-        for i := 0; i < len(conns); i++ {
-            conn :=  conns[i].(*module.ConnectionObject)
-            err = conn_manager.Undeploy(overlay_name, *conn)
-            if err != nil {
-                log.Println(err)
-            }
-        }
-    }*/
-
     to := t.(*module.DeviceObject)
+
+    //If the device is in mode 2:
+    // * Free OIP assigned
+    // * Remove ipsec configuration on SCC
     if to.Status.Mode == 2 {
         // Free OIP
         ipr_manager.Free(overlay_name, to.Status.Ip)
@@ -411,35 +329,12 @@ func (c *DeviceObjectManager) DeleteObject(m map[string]string) error {
         scc := module.EmptyObject{
             Metadata: module.ObjectMetaData{"local", "", "", ""}}
 
-	resutil := NewResUtil()
+	    resutil := NewResUtil()
         r_str := to.Status.Data["scc_ipsec_resource"]
         r, _ := resource.GetResourceBuilder().ToObject(r_str)
         resutil.AddResource(&scc, "create", r)
-	resutil.Undeploy("localto" + device_name, "YAML")
-
-        // Free Hub Proxy port
-        /*
-        hm := make(map[string]string)
-        hm[OverlayResource] = overlay_name
-        hm[HubResource] = to.Specification.ProxyHub
-        proxy_hub, err := hub_manager.GetObject(hm)
-        if err != nil {
-            log.Println(err)
-        } else {
-            proxy_hub_obj := proxy_hub.(*module.HubObject)
-
-            // unset hub object with proxy-port 
-            proxy_hub_obj.UnsetProxyPort(to.Specification.ProxyHubPort)
-            _, err = GetDBUtils().UpdateObject(hub_manager, hm, proxy_hub_obj)
-            if err != nil {
-                log.Println(err)
-            }
-        }*/
+	    resutil.Undeploy("localto" + device_name, "YAML")
     }
-
-    // Delete certificate
-    //log.Println("Delete Certificate: " + device_name + "-cert")
-    //overlay_manager.DeleteCertificate(device_name + "-cert")
 
     // DB Operation
     err = GetDBUtils().DeleteObject(c, m)

@@ -46,8 +46,6 @@ type HubObjectStatus struct {
         Data            map[string]string
         // Allocated proxy port for device
         ProxyPort       map[string]string
-        // Sending interface name as input for spec rather than status
-        //IfName	        string 
 }
 
 func (c *HubObject) GetMetadata() ObjectMetaData {
@@ -89,11 +87,6 @@ func (c *HubObject) AllocateProxyPort() (int, error) {
 
 	return 0, pkgerrors.New("Fail to allocate proxy port")
 }
-
-/*
-func (c *HubObject) GetIfName() string {
-	return c.Specification.IfName
-}*/
 
 func init() {
 	GetObjectBuilder().Register("Hub", &HubObject{})

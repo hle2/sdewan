@@ -24,20 +24,10 @@ func TestMain(m *testing.M) {
     IprangeUrl := OverlayUrl + "/overlay1/" + manager.IPRangeCollection
     CertUrl = OverlayUrl + "/overlay1/" + manager.CertCollection
 
-    /*kube_config_A, err := ioutil.ReadFile("localhost.conf")
-    if err != nil {
-            fmt.Println(err)
-    }
-    encoded_config_a := base64.StdEncoding.EncodeToString([]byte(kube_config_A))
-    */
     kube_config_B, _ := ioutil.ReadFile("admin.conf")
     encoded_config_b := base64.StdEncoding.EncodeToString([]byte(kube_config_B))
     
-
-    //var publicIpA []string
     var publicIpB []string
-    //publicIpA = append(publicIpA, "10.10.10.35")
-    //publicIpB = append(publicIpB, "10.10.10.16")
 
     var object1 = module.OverlayObject{
         Metadata: module.ObjectMetaData{"overlay1", "", "", ""}, 
@@ -49,19 +39,13 @@ func TestMain(m *testing.M) {
         Metadata: module.ObjectMetaData{"proposal2", "", "", ""}, 
         Specification: module.ProposalObjectSpec{"aes256", "sha256", "modp3072"}}
     var device = module.DeviceObject{
-	Metadata: module.ObjectMetaData{"device-a", "", "", ""},
-	Specification: module.DeviceObjectSpec{publicIpB, true, "", 65536, true, false, "sdewan-edge-a", encoded_config_b}}
+	    Metadata: module.ObjectMetaData{"device-a", "", "", ""},
+	    Specification: module.DeviceObjectSpec{publicIpB, true, "", 65536, true, false, "sdewan-edge-a", encoded_config_b}}
     var iprange_object1 = module.IPRangeObject{
         Metadata: module.ObjectMetaData{"ipr1", "", "", ""}, 
         Specification: module.IPRangeObjectSpec{"192.168.0.2", 1, 15}}
     var cert_object1 = module.CertificateObject{
         Metadata: module.ObjectMetaData{"device-a", "", "", ""}}
-	/*var object2 = module.HubObject{
-        Metadata: module.ObjectMetaData{"huba", "", "", ""},
-        Specification: module.HubObjectSpec{publicIpA, "10.10.10.35", encoded_config_a}}
-    var object3 = module.HubObject{
-        Metadata: module.ObjectMetaData{"hubb", "", "", ""}, 
-        Specification: module.HubObjectSpec{publicIpB, "10.10.10.16", encoded_config_b}}*/
 
     createControllerObject(OverlayUrl, &object1, &module.OverlayObject{})
     createControllerObject(ProposalUrl, &objecta, &module.ProposalObject{})
@@ -69,14 +53,9 @@ func TestMain(m *testing.M) {
     createControllerObject(IprangeUrl, &iprange_object1, &module.IPRangeObject{})
     createControllerObject(CertUrl, &cert_object1, &module.CertificateObject{})
     createControllerObject(BaseUrl, &device, &module.DeviceObject{})
-    /*
-    createControllerObject(BaseUrl, &object2, &module.HubObject{})
-    createControllerObject(BaseUrl, &object3, &module.HubObject{})
-*/
+    
     var ret = m.Run()
-/*
-    deleteControllerObject(BaseUrl, "huba")
-    deleteControllerObject(BaseUrl, "hubb")*/
+
     deleteControllerObject(BaseUrl, "device-a")
     deleteControllerObject(IprangeUrl, "ipr1")
     deleteControllerObject(ProposalUrl, "proposal2")
@@ -150,11 +129,11 @@ func TestGetObject(t *testing.T) {
         handleError(t, err, tcase.name, tcase.expectedErr, tcase.expectedErrCode)
     }
 }
-/*
+
 func TestCreateObject(t *testing.T) {
     var publicIp []string
-    publicIp = append(publicIp, "1.1.1.1")
-    kube_config_B, err := ioutil.ReadFile("admin.conf")
+
+    kube_config_B, err := ioutil.ReadFile("admin1.conf")
     if err != nil {
             fmt.Println(err)
     }
@@ -162,30 +141,30 @@ func TestCreateObject(t *testing.T) {
 
     tcases := []struct {
         name string
-        obj module.HubObject
+        obj module.DeviceObject
         expectedErr bool
         expectedErrCode int
     }{
         {
             name: "EmptyName",
-            obj: module.HubObject{
+            obj: module.DeviceObject{
                 Metadata: module.ObjectMetaData{"", "object 1", "", ""},
-                Specification: module.HubObjectSpec{publicIp, "1.1.1.1", string(encoded_config_b)}},
+                Specification: module.DeviceObjectSpec{publicIp, true, "", 65536, true, false, "emptyobject", encoded_config_b}},
             expectedErr: true,
             expectedErrCode: 422,
         },
     }
 
     for _, tcase := range tcases {
-        _, err := createControllerObject(BaseUrl, &tcase.obj, &module.HubObject{})
+        _, err := createControllerObject(BaseUrl, &tcase.obj, &module.DeviceObject{})
         handleError(t, err, tcase.name, tcase.expectedErr, tcase.expectedErrCode)
     }
 }
 
 func TestCreateObjectPass(t *testing.T) {
     var publicIp []string
-    publicIp = append(publicIp, "192.168.121.28")
-    kube_config_B, err := ioutil.ReadFile("admin.conf")
+
+    kube_config_B, err := ioutil.ReadFile("admin1.conf")
     if err != nil {
             fmt.Println(err)
     }
@@ -193,20 +172,20 @@ func TestCreateObjectPass(t *testing.T) {
 
     tcases := []struct {
         name string
-        obj module.HubObject
+        obj module.DeviceObject
         expectedErr bool
         expectedErrCode int
     }{
         {
             name: "Normal",
-            obj: module.HubObject{
-                Metadata: module.ObjectMetaData{"hubtest", "object 4", "", ""},
-                Specification: module.HubObjectSpec{publicIp, "192.168.121.28", string(encoded_config_b)}},
+            obj: module.DeviceObject{
+                Metadata: module.ObjectMetaData{"devicetest", "object 2", "", ""},
+                Specification: module.DeviceObjectSpec{publicIp, true, "", 65536, true, false, "devicetest", encoded_config_b}},
         },
     }
 
     for _, tcase := range tcases {
-        _, err := createControllerObject(BaseUrl, &tcase.obj, &module.HubObject{})
+        _, err := createControllerObject(BaseUrl, &tcase.obj, &module.DeviceObject{})
         handleError(t, err, tcase.name, tcase.expectedErr, tcase.expectedErrCode)
     }
 
@@ -218,12 +197,12 @@ func TestCreateObjectPass(t *testing.T) {
     }{
         {
             name: "NormalGet",
-            object_name: "hubtest",
+            object_name: "devicetest",
         },
     }
 
     for _, gcase := range gcases {
-        _, err := getControllerObject(BaseUrl, gcase.object_name, &module.HubObject{})
+        _, err := getControllerObject(BaseUrl, gcase.object_name, &module.DeviceObject{})
         handleError(t, err, gcase.name, gcase.expectedErr, gcase.expectedErrCode)
     }
 }

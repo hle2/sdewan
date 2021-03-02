@@ -56,21 +56,15 @@ func TestMain(m *testing.M) {
         Metadata: module.ObjectMetaData{"huba", "", "", ""},
         Specification: module.HubObjectSpec{publicIpA, "10.10.10.15", encoded_config_a}}
     var device = module.DeviceObject{
-	Metadata: module.ObjectMetaData{"device-a", "", "", ""},
-	Specification: module.DeviceObjectSpec{publicIpB, true, "", 65536, true, false, "sdewan-edge-a", encoded_config_b}}
+	    Metadata: module.ObjectMetaData{"device-a", "", "", ""},
+	    Specification: module.DeviceObjectSpec{publicIpB, true, "", 65536, true, false, "sdewan-edge-a", encoded_config_b}}
     var iprange_object1 = module.IPRangeObject{
         Metadata: module.ObjectMetaData{"ipr1", "", "", ""}, 
         Specification: module.IPRangeObjectSpec{"192.168.0.2", 1, 15}}
     var cert_object1 = module.CertificateObject{
         Metadata: module.ObjectMetaData{"device-a", "", "", ""}}
     var hubdevice_object = module.HubDeviceObject{
-	Metadata: module.ObjectMetaData{"hubdeviceconn", "", "", ""}}
-	/*var object2 = module.HubObject{
-        Metadata: module.ObjectMetaData{"huba", "", "", ""},
-        Specification: module.HubObjectSpec{publicIpA, "10.10.10.35", encoded_config_a}}
-    var object3 = module.HubObject{
-        Metadata: module.ObjectMetaData{"hubb", "", "", ""}, 
-        Specification: module.HubObjectSpec{publicIpB, "10.10.10.16", encoded_config_b}}*/
+	    Metadata: module.ObjectMetaData{"hubdeviceconn", "", "", ""}}
 
     createControllerObject(OverlayUrl, &object1, &module.OverlayObject{})
     createControllerObject(ProposalUrl, &objecta, &module.ProposalObject{})
@@ -104,15 +98,6 @@ func TestMain(m *testing.M) {
     deleteControllerObject(OverlayUrl, "overlay1")
 
     os.Exit(ret)
-    //deleteControllerObject(ConnUrl, "device-a")
-    /*deleteControllerObject(BaseUrl, "device-a")
-    deleteControllerObject(HubUrl, "huba")
-    deleteControllerObject(IprangeUrl, "ipr1")
-    deleteControllerObject(ProposalUrl, "proposal2")
-    deleteControllerObject(ProposalUrl, "proposal1")
-    */
-    //deleteControllerObject(OverlayUrl, "overlay1")
-    //os.Exit(0)
 }
 
 func TestGetObjects(t *testing.T) {
@@ -163,7 +148,6 @@ func TestGetObject(t *testing.T) {
 }
 
 func TestCreateObject(t *testing.T) {
-
     tcases := []struct {
         name string
         obj module.HubDeviceObject

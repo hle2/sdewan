@@ -118,21 +118,6 @@ func (c *OverlayObjectManager) ParseObject(r io.Reader) (module.ControllerObject
 }
 
 func (c *OverlayObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-    // for rsync test
-    resutil := NewResUtil()
-
-    deviceObject := module.OverlayObject{
-        Metadata: module.ObjectMetaData{"local", "", "", ""},
-        Specification: module.OverlayObjectSpec{}}
-
-    resutil.AddResource(&deviceObject, "Create", &resource.FileResource{"mycm", "ConfigMap", "mycm.yaml"})
-
-    _, err2 := resutil.Deploy("test-app", "YAML")
-
-    if err2 != nil {
-        return c.CreateEmptyObject(), pkgerrors.Wrap(err2, "Unable to create the object: fail to deploy resource")
-    }
-
     // Create a issuer each overlay
     to := t.(*module.OverlayObject)
     overlay_name := to.Metadata.Name
@@ -181,8 +166,8 @@ func (c *OverlayObjectManager) UpdateObject(m map[string]string, t module.Contro
 }
 
 func (c *OverlayObjectManager) DeleteObject(m map[string]string) error {
-    //overlay_name := m[OverlayResource]
-    /*cu, err := GetCertUtil()
+    overlay_name := m[OverlayResource]
+    cu, err := GetCertUtil()
     if err != nil {
         log.Println(err)
     } else {
@@ -195,7 +180,7 @@ func (c *OverlayObjectManager) DeleteObject(m map[string]string) error {
             log.Println("Failed to delete overlay[" + overlay_name +"] certificate: " + err.Error())
         }
     }
-*/
+
     // DB Operation
     err := GetDBUtils().DeleteObject(c, m)
 
@@ -274,7 +259,6 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
     for i:= 0 ; i < len(proposals); i++ {
         proposal_obj := proposals[i].(*module.ProposalObject)
         all_proposals = append(all_proposals, proposal_obj.Metadata.Name)
-        // pr := resource.ProposalResource{proposals[i].(*module.ProposalObject).Metadata.Name, proposals[i].(*module.ProposalObject).Specification.Encryption, proposals[i].(*module.ProposalObject).Specification.Hash, proposals[i].(*module.ProposalObject).Specification.DhGroup}
         pr := proposal_obj.ToResource()
         proposalresources = append(proposalresources, pr)
     }
@@ -494,64 +478,10 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
 
     cm := GetConnectionManager()
     err = cm.Deploy(m[OverlayResource], co)
-    //Add resource
-    //resutil := NewResUtil()
-    //resutil.AddResource(Obj1, "create", &obj1_ipsec_resource)
-    //resutil.AddResource(Obj2, "create", &obj2_ipsec_resource)
-    //for i :=0; i < len(proposalresources); i++ {
-        //    resutil.AddResource(Obj1, "create", proposalresources[i])
-        //    resutil.AddResource(Obj2, "create", proposalresources[i])
-        //}
-
-        //Deploy resources
-        //err = resutil.Deploy("YAML")
-
+   
     if err != nil {
         return pkgerrors.Wrap(err, "Unable to create the object: fail to deploy resource")
     }
 
     return nil
 }
-
-/*
-func (c *OverlayObjectManager) SetupHubProxy(m map[string]string, h module.ControllerObject, d module.ControllerObject, namespace string) error {
-    // IPsec rule
-    c.SetupConnection(m, h, d, "HUBTODEVICE", namespace)
-
-    hub := h.(*module.HubObject)
-    device := d.(*module.DeviceObject)
-
-    networks := []string{}
-
-    // DNAT rule
-    hubZoneResource := resource.FirewallZoneResource{
-        Name: strings.ToLower(strings.Replace(hub.Metadata.Name, "-", "", -1) + "_" + hub.GetIfName()),
-        Network: append(networks, hub.GetIfName()),
-        Input: ACCEPT,
-        Output: ACCEPT,
-        Forward: ACCEPT,
-        MASQ: "0",
-        MTU_FIX: "1",
-    }
-
-    hubDnatResource := resource.FirewallDnatResource{
-        Name: strings.ToLower(strings.Replace(hub.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(device.Metadata.Name, "-", "", -1)),
-        Source: hubZoneResource.GetName(),
-        SourceDestIP: hub.Status.Ip,
-        SourceDestPort: strconv.Itoa(device.Specification.ProxyHubPort),
-        DestinationIP: device.Status.Ip,
-        DestinationPort: DEFAULT_K8S_API_SERVER_PORT,
-        Protocol: BASE_PROTOCOL,
-    }
-
-    resutil := NewResUtil()
-    resutil.AddResource(hub, "Create", &hubZoneResource)
-    resutil.AddResource(hub, "Create", &hubDnatResource)
-    _, err := resutil.Deploy(hub.Metadata.Name + "Firewall", "YAML")
-    if err != nil {
-        return pkgerrors.Wrap(err, "Fail to deploy resource")
-    }
-
-    return nil
-}
-*/
