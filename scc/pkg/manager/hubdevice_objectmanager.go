@@ -84,22 +84,11 @@ func (c *HubDeviceObjectManager) ParseObject(r io.Reader) (module.ControllerObje
 }
 
 func (c *HubDeviceObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
-	return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
-}
-
-func (c *HubDeviceObjectManager) GetObject(m map[string]string) (module.ControllerObject, error) {
-    return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
-}
-
-func (c *HubDeviceObjectManager) GetObjects(m map[string]string) ([]module.ControllerObject, error) {
-    return []module.ControllerObject{}, pkgerrors.New("Not implemented")
-}
-
-func (c *HubDeviceObjectManager) UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
 	// Setup hub-device connection
     overlay_name := m[OverlayResource]
     hub_name := m[HubResource]
-    device_name := m[DeviceResource]
+    to := t.(*module.HubDeviceObject)
+    device_name := to.Specification.Device
 
     hub_manager := GetManagerset().Hub
     dev_manager := GetManagerset().Device
@@ -129,6 +118,18 @@ func (c *HubDeviceObjectManager) UpdateObject(m map[string]string, t module.Cont
     }
 
     return c.CreateEmptyObject(), nil
+}
+
+func (c *HubDeviceObjectManager) GetObject(m map[string]string) (module.ControllerObject, error) {
+    return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
+}
+
+func (c *HubDeviceObjectManager) GetObjects(m map[string]string) ([]module.ControllerObject, error) {
+    return []module.ControllerObject{}, pkgerrors.New("Not implemented")
+}
+
+func (c *HubDeviceObjectManager) UpdateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
+	return c.CreateEmptyObject(), pkgerrors.New("Not implemented")
 }
 
 func (c *HubDeviceObjectManager) DeleteObject(m map[string]string) error {
