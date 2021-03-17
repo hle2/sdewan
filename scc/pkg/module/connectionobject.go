@@ -81,10 +81,10 @@ func NewConnectionEnd(conn_obj ControllerObject, ip string) ConnectionEnd {
 	    return ConnectionEnd{
 	        Name: CreateEndName(conn_obj.GetType(), conn_obj.GetMetadata().Name),
 	        Type: conn_obj.GetType(),
-	    	IP: ip,
-	    	ConnObject: obj_str,
-	    	Resources: []string{},
-	    	ReservedRes: []string{},
+		IP: ip,
+		ConnObject: obj_str,
+		Resources: []string{},
+		ReservedRes: []string{},
 	    }
 	} else {
 		log.Println(err)
@@ -96,11 +96,11 @@ func NewConnectionObject(end1 ConnectionEnd, end2 ConnectionEnd) ConnectionObjec
     return ConnectionObject{
         Metadata: ObjectMetaData{CreateConnectionName(end1.Name, end2.Name), "", "", ""}, 
         Info: ConnectionInfo{
-        	End1: end1,
-        	End2: end2,
-        	ContextId: "",
-        	State: StateEnum.Created,
-        	ErrorMessage: "",
+		End1: end1,
+		End2: end2,
+		ContextId: "",
+		State: StateEnum.Created,
+		ErrorMessage: "",
         },
     }
 }

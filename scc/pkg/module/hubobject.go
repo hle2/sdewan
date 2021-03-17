@@ -54,7 +54,7 @@ func (c *HubObject) GetMetadata() ObjectMetaData {
 
 
 func (c *HubObject) GetCertName() string {
-    return c.Metadata.Name + "-cert"
+    return "hub-" + c.Metadata.Name + "-cert"
 }
 
 func (c *HubObject) GetType() string {

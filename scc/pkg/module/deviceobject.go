@@ -68,5 +68,5 @@ func init() {
 }
 
 func (c *DeviceObject) GetCertName() string {
-    return c.Metadata.Name + "-cert"
+    return "device-" + c.Metadata.Name + "-cert"
 }

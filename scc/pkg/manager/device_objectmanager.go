@@ -19,13 +19,12 @@ package manager
 import (
     "io"
     "log"
-    "time"
     //"strconv"
     "encoding/json"
     "encoding/base64"
     "strings"
-
-    "k8s.io/apimachinery/pkg/util/wait"
+    "time"
+    "github.com/matryer/runner"
 
     "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
@@ -35,6 +34,10 @@ import (
 )
 
 const SCC_RESOURCE = "scc_ipsec_resource"
+const RegStatus = "RegStatus"
+
+var ips []string
+var task *runner.Task
 
 type DeviceObjectKey struct {
     OverlayName string `json:"overlay-name"`
@@ -87,12 +90,12 @@ func (c *DeviceObjectManager) GetStoreKey(m map[string]string, t module.Controll
     if res_name != "" {
         if meta_name != "" && res_name != meta_name {
             return key, pkgerrors.New("Resource name unmatched metadata name")
-        } 
+        }
 
         key.DeviceName = res_name
     } else {
         if meta_name == "" {
-            return key, pkgerrors.New("Unable to find resource name")  
+            return key, pkgerrors.New("Unable to find resource name")
         }
 
         key.DeviceName = meta_name
@@ -121,6 +124,9 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
     if err != nil {
         return pkgerrors.Wrap(err, "Fail to decode kubeconfig")
     }
+
+    // Set the Register status to pending
+    to.Status.Data[RegStatus] = "pending"
 
     if len(local_public_ips) > 0{
         // Use public IP as external connection
@@ -157,7 +163,6 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         proposals, err := proposal.GetObjects(m)
         if len(proposals) == 0 || err != nil {
             log.Println("Missing Proposal in the overlay\n")
-            log.Println(err)
             return pkgerrors.New("Error in getting proposals")
         }
 
@@ -171,15 +176,16 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         }
 
         //Extract SCC cert/key
-	    cu, err := GetCertUtil()
-	    if err != nil {
-		  log.Println("Getting certutil error")
-	    }
+	cu, err := GetCertUtil()
+	if err != nil {
+	    log.Println("Getting certutil error")
+	}
         crts, key, err := cu.GetKeypair(SCCCertName, NameSpaceName)
-        root_ca := cu.GetSelfSignedCA()
         crt := strings.SplitAfter(crts, "-----END CERTIFICATE-----")[0]
 
-        // Build up ipsec resource
+	root_ca := GetRootCA(overlay_name)
+
+	// Build up ipsec resource
         scc_conn := resource.Connection{
             Name: DEFAULT_CONN,
             ConnectionType: CONN_TYPE,
@@ -191,7 +197,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
         }
 
 	    scc_ipsec_resource := resource.IpsecResource{
-            Name: "localto" + strings.ToLower(strings.Replace(to.Metadata.Name, "-", "", -1)),
+            Name: "localto" + format_resource_name(to.Metadata.Name, ""),
             Type: VTI_MODE,
             Remote: ANY,
             AuthenticationMethod: PUBKEY_AUTH,
@@ -199,7 +205,7 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
             PrivateCert: base64.StdEncoding.EncodeToString([]byte(key)),
             SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
             LocalIdentifier: "CN="+ SCCCertName,
-            RemoteIdentifier: "CN=device-" + to.Metadata.Name + "-cert",
+            RemoteIdentifier: "CN=" + to.GetCertName(),
             CryptoProposal: all_proposal,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: scc_conn,
@@ -207,45 +213,22 @@ func (c *DeviceObjectManager) PreProcessing(m map[string]string, t module.Contro
 
         scc := module.EmptyObject{
             Metadata: module.ObjectMetaData{"local", "", "", ""}}
-        // Add and deploy resource
-        resutil := NewResUtil()
+
+	// Add and deploy resource
+	resutil := NewResUtil()
         resutil.AddResource(&scc, "create", &scc_ipsec_resource)
 	    for i :=0; i < len(proposalresource); i++ {
 		  resutil.AddResource(&scc, "create", proposalresource[i])
         }
-        resutil.Deploy("localto" + to.Metadata.Name, "YAML")
 
+	resutil.Deploy("localto" + to.Metadata.Name, "YAML")
 
         //Reserve ipsec resource to device object
         res_str, err := resource.GetResourceBuilder().ToString(&scc_ipsec_resource)
         to.Status.Data[SCC_RESOURCE] = res_str
 
-        var ips []string
-	    ips = append(ips, oip)
+	ips = append(ips, oip)
 
-        err = wait.PollImmediate(time.Second*5, time.Second*30,
-            func() (bool, error) {
-                kube_config, _, err := kubeutil.checkKubeConfigAvail(kube_config, ips, DEFAULT_K8S_API_SERVER_PORT)
-                if err != nil {
-                    log.Println("Waiting for scc connection to be set up.")
-		            return false, nil
-                }
-                // Set new kubeconfig in device
-                // Todo: to set kubeconfig even when timeout
-                to.Specification.KubeConfig = base64.StdEncoding.EncodeToString(kube_config)
-		        err = GetDBUtils().RegisterDevice(to.Metadata.Name, to.Specification.KubeConfig)
-		        if err != nil {
-			        log.Println(err)
-		        }
-		        log.Println("scc connection is verified.")
-                return true, nil
-            },
-        )
-
-        if err != nil {
-            log.Println(err)
-            return pkgerrors.Wrap(err, "Fail to connect to device.")
-        }
     }
     return nil
 
@@ -257,30 +240,23 @@ func (c *DeviceObjectManager) CreateObject(m map[string]string, t module.Control
         return c.CreateEmptyObject(), err
     }
 
-    overlay_manager := GetManagerset().Overlay
-
     to := t.(*module.DeviceObject)
-    log.Println("Registering device " + to.Metadata.Name + " ... ")
-
-    devices, err := c.GetObjects(m)
-    if err != nil {
-        log.Println(err)
-        return t, nil
-    }
-
-    for i := 0; i < len(devices); i++ {
-        dev :=  devices[i].(*module.DeviceObject)
-        if to.Status.Mode == 1 || dev.Status.Mode == 1 {
-            err = overlay_manager.SetupConnection(m, to, dev, DEVICETODEVICE, NameSpaceName)
-            if err != nil {
-                log.Println(err)
-            }
-        }
-    }
+    task = runner.Go(func(ShouldStop runner.S) error {
+	for to.Status.Data[RegStatus] != "success" {
+		err = c.PostRegister(m, t)
+		if err != nil {
+			log.Println(err)
+		}
+		time.Sleep(5 * time.Second)
+		if ShouldStop() {
+			break
+		}
+	}
+	return nil
+    })
 
     // DB Operation
     t, err = GetDBUtils().CreateObject(c, m, t)
-
     return t, err
 }
 
@@ -311,6 +287,15 @@ func (c *DeviceObjectManager) DeleteObject(m map[string]string) error {
         return nil
     }
 
+    if ( task != nil && task.Running() ) {
+	task.Stop()
+	select {
+	case <-task.StopChan():
+	case <-time.After(2 * time.Second):
+		log.Println("Goroutine register device stopped")
+	}
+    }
+
     //overlay_manager := GetManagerset().Overlay
     ipr_manager := GetManagerset().IPRange
 
@@ -329,16 +314,20 @@ func (c *DeviceObjectManager) DeleteObject(m map[string]string) error {
         scc := module.EmptyObject{
             Metadata: module.ObjectMetaData{"local", "", "", ""}}
 
-	    resutil := NewResUtil()
+	resutils := NewResUtil()
         r_str := to.Status.Data["scc_ipsec_resource"]
         r, _ := resource.GetResourceBuilder().ToObject(r_str)
-        resutil.AddResource(&scc, "create", r)
-	    resutil.Undeploy("localto" + device_name, "YAML")
+        resutils.AddResource(&scc, "create", r)
+	    resutils.Undeploy("localto" + device_name, "YAML")
     }
+
 
     // DB Operation
     err = GetDBUtils().DeleteObject(c, m)
 
+    //DB Operation to remove cloud config
+    time.Sleep(10 * time.Second)
+    GetDBUtils().UnregisterDevice(device_name)
     return err
 }
 
@@ -346,7 +335,7 @@ func GetDeviceCertificate(overlay_name string, device_name string)(string, strin
     cert := GetManagerset().Cert
     _, crts, key, err := cert.GetOrCreateDC(overlay_name, device_name)
     if err != nil {
-        log.Println("Error in get cert for device ...")
+        log.Println("Error in getting cert for device ...")
             return "", "", err
     }
 
@@ -354,3 +343,59 @@ func GetDeviceCertificate(overlay_name string, device_name string)(string, strin
     return crt, key, nil
 }
 
+func (c *DeviceObjectManager) PostRegister(m map[string]string, t module.ControllerObject) error {
+
+    overlay_manager := GetManagerset().Overlay
+
+    to := t.(*module.DeviceObject)
+    log.Println("Registering device " + to.Metadata.Name + " ... ")
+
+
+    if to.Status.Mode == 2 {
+        kube_config, err := base64.StdEncoding.DecodeString(to.Specification.KubeConfig)
+        if err != nil {
+	    to.Status.Data[RegStatus] = "failed"
+        }
+
+	kube_config, _, err = kubeutil.checkKubeConfigAvail(kube_config, ips, DEFAULT_K8S_API_SERVER_PORT)
+	if err != nil {
+                //TODO: check the error type, and if is unauthorized then switch the status to failed.
+		return err
+	}
+
+	to.Status.Data[RegStatus] = "success"
+	to.Specification.KubeConfig = base64.StdEncoding.EncodeToString(kube_config)
+        err = GetDBUtils().RegisterDevice(to.Metadata.Name, to.Specification.KubeConfig)
+        if err != nil {
+            log.Println(err)
+	    return err
+        }
+        log.Println("scc connection is verified.")
+
+    } else {
+	to.Status.Data[RegStatus] = "success"
+    }
+
+    if to.Status.Data[RegStatus] == "success" {
+	devices, err := c.GetObjects(m)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+        //TODO: Need to add funcs to re-create connections if some of the connections are not ready
+        //Maybe because of cert not ready or other reasons.
+	for i := 0; i < len(devices); i++ {
+            dev :=  devices[i].(*module.DeviceObject)
+            if to.Status.Mode == 1 || dev.Status.Mode == 1 {
+		err = overlay_manager.SetupConnection(m, to, dev, DEVICETODEVICE, NameSpaceName)
+		if err != nil {
+	                return err
+                }
+            }
+	}
+    }
+
+    c.UpdateObject(m, t)
+    return nil
+}

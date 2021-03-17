@@ -91,7 +91,7 @@ func (c *ConnectionManager) Deploy(overlay string, cm module.ConnectionObject) e
     }
 
     if err != nil {
-        log.Println(err)
+	log.Println(err)
         cm.Info.State = module.StateEnum.Error
         cm.Info.ErrorMessage = err.Error()
     } else {
@@ -121,7 +121,7 @@ func (c *ConnectionManager) Undeploy(overlay string, cm module.ConnectionObject)
         resutil.AddResource(co2, "create", r)
     }
 
-    // Deploy resources
+    // Undeploy resources
     cid, err := resutil.Undeploy(cm.Metadata.Name, "YAML")
     if cm.Info.ContextId == "" {
         cm.Info.ContextId = cid

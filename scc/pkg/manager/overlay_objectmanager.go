@@ -132,7 +132,7 @@ func (c *OverlayObjectManager) CreateObject(m map[string]string, t module.Contro
             _, err := cu.CreateCAIssuer(c.IssuerName(overlay_name), NameSpaceName, c.CertName(overlay_name))
             if err != nil {
                 log.Println("Failed to create overlay[" + overlay_name +"] issuer: " + err.Error())
-            }    
+            }
         } else {
             log.Println("Failed to create overlay[" + overlay_name +"] certificate: " + err.Error())
         }
@@ -167,22 +167,24 @@ func (c *OverlayObjectManager) UpdateObject(m map[string]string, t module.Contro
 
 func (c *OverlayObjectManager) DeleteObject(m map[string]string) error {
     overlay_name := m[OverlayResource]
-    cu, err := GetCertUtil()
-    if err != nil {
-        log.Println(err)
-    } else {
-        err = cu.DeleteIssuer(c.IssuerName(overlay_name), NameSpaceName)
-        if err != nil {
-            log.Println("Failed to delete overlay[" + overlay_name +"] issuer: " + err.Error())
-        }
-        err = cu.DeleteCertificate(c.CertName(overlay_name), NameSpaceName)
-        if err != nil {
-            log.Println("Failed to delete overlay[" + overlay_name +"] certificate: " + err.Error())
-        }
-    }
 
     // DB Operation
     err := GetDBUtils().DeleteObject(c, m)
+    if err == nil {
+	    cu, err := GetCertUtil()
+	if err != nil {
+		log.Println(err)
+	} else {
+		err = cu.DeleteIssuer(c.IssuerName(overlay_name), NameSpaceName)
+		if err != nil {
+		log.Println("Failed to delete overlay[" + overlay_name +"] issuer: " + err.Error())
+	}
+		err = cu.DeleteCertificate(c.CertName(overlay_name), NameSpaceName)
+		if err != nil {
+		log.Println("Failed to delete overlay[" + overlay_name +"] certificate: " + err.Error())
+		}
+	}
+    }
 
     return err
 }
@@ -251,7 +253,6 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
     proposals, err := proposal.GetObjects(m)
     if len(proposals) == 0 || err != nil {
         log.Println("Missing Proposal in the overlay\n")
-        log.Println(err)
         return pkgerrors.New("Error in getting proposals")
     }
     var all_proposals []string
@@ -265,15 +266,7 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
 
     //Get the overlay cert
     var root_ca string
-
-    cu, err := GetCertUtil()
-    if err != nil {
-	    log.Println(err)
-    }
-    root_ca = cu.GetSelfSignedCA()
-    interim_ca, _, _ := c.GetCertificate(m[OverlayResource])
-
-    root_ca += interim_ca
+    root_ca = GetRootCA(m[OverlayResource])
 
     var obj1_ipsec_resource resource.IpsecResource
     var obj2_ipsec_resource resource.IpsecResource
@@ -291,16 +284,16 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         //Keypair
         obj1_crt, obj1_key, err := GetHubCertificate(obj1.GetCertName(),namespace)
         if err != nil {
-            log.Println(err)
+	    return err
         }
         obj2_crt, obj2_key, err := GetHubCertificate(obj2.GetCertName(),namespace)
         if err != nil {
-            log.Println(err)
+	    return err
         }
 
         //IpsecResources
         conn := resource.Connection{
-            Name: DEFAULT_CONN + strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
+            Name: DEFAULT_CONN + format_resource_name(obj1.Metadata.Name, obj2.Metadata.Name),
             ConnectionType: CONN_TYPE,
             Mode: MODE,
             Mark: DEFAULT_MARK,
@@ -308,29 +301,29 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             CryptoProposal: all_proposals,
         }
         obj1_ipsec_resource = resource.IpsecResource{
-            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
+            Name: format_resource_name(obj1.Metadata.Name, obj2.Metadata.Name),
             Type: VTI_MODE,
             Remote: obj2_ip,
             AuthenticationMethod: PUBKEY_AUTH,
             PublicCert: base64.StdEncoding.EncodeToString([]byte(obj1_crt)),
             PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj1_key)),
             SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
-            LocalIdentifier: "CN="+obj1.Metadata.Name+"-cert",
-            RemoteIdentifier: "CN="+obj2.Metadata.Name+"-cert",
+            LocalIdentifier: "CN="+obj1.GetCertName(),
+            RemoteIdentifier: "CN="+obj2.GetCertName(),
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: conn,
         }
         obj2_ipsec_resource = resource.IpsecResource{
-            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
+            Name: format_resource_name(obj2.Metadata.Name, obj1.Metadata.Name),
             Type: VTI_MODE,
             Remote: obj1_ip,
             AuthenticationMethod: PUBKEY_AUTH,
             PublicCert: base64.StdEncoding.EncodeToString([]byte(obj2_crt)),
             PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj2_key)),
             SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
-            LocalIdentifier: "CN="+obj2.Metadata.Name+"-cert",
-            RemoteIdentifier: "CN="+obj1.Metadata.Name+"-cert",
+            LocalIdentifier: "CN="+obj2.GetCertName(),
+            RemoteIdentifier: "CN="+obj1.GetCertName(),
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: conn,
@@ -346,11 +339,11 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         //Keypair
         obj1_crt, obj1_key, err := GetHubCertificate(obj1.GetCertName(),namespace)
         if err != nil {
-            log.Println(err)
+	    return err
         }
 
         obj1_conn := resource.Connection{
-            Name: DEFAULT_CONN + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
+            Name: DEFAULT_CONN + format_resource_name(obj2.Metadata.Name, ""),
             ConnectionType: CONN_TYPE,
             Mode: MODE,
             Mark: DEFAULT_MARK,
@@ -360,15 +353,15 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         }
 
         obj1_ipsec_resource = resource.IpsecResource{
-            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
+            Name: format_resource_name(obj1.Metadata.Name, obj2.Metadata.Name),
             Type: VTI_MODE,
             Remote: ANY,
             AuthenticationMethod: PUBKEY_AUTH,
             PublicCert: base64.StdEncoding.EncodeToString([]byte(obj1_crt)),
             PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj1_key)),
             SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
-            LocalIdentifier: "CN="+obj1.Metadata.Name+"-cert",
-            RemoteIdentifier: "CN=device-"+obj2.Metadata.Name+"-cert",
+            LocalIdentifier: "CN="+obj1.GetCertName(),
+            RemoteIdentifier: "CN="+obj2.GetCertName(),
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: obj1_conn,
@@ -376,12 +369,12 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
 
         obj2_crt, obj2_key, err := GetDeviceCertificate(m[OverlayResource], obj2.Metadata.Name)
         if err != nil {
-            log.Println(err)
+	    return err
         }
 
         //IpsecResources
         obj2_conn := resource.Connection{
-            Name: DEFAULT_CONN + strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)),
+            Name: DEFAULT_CONN + format_resource_name(obj1.Metadata.Name, ""),
             Mode: MODE,
             LocalUpDown: IPTABLES_UPDOWN,
             ConnectionType: CONN_TYPE,
@@ -389,15 +382,15 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             CryptoProposal: all_proposals,
         }
         obj2_ipsec_resource = resource.IpsecResource{
-            Name: strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)),
+            Name: format_resource_name(obj2.Metadata.Name, obj1.Metadata.Name),
             Type: POLICY_MODE,
             Remote: obj1_ip,
             AuthenticationMethod: PUBKEY_AUTH,
             PublicCert: obj2_crt,
             PrivateCert: obj2_key,
             SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
-            LocalIdentifier: "CN=device-"+obj2.Metadata.Name+"-cert",
-            RemoteIdentifier: "CN="+obj1.Metadata.Name+"-cert",
+            LocalIdentifier: "CN="+obj2.GetCertName(),
+            RemoteIdentifier: "CN="+obj1.GetCertName(),
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: obj2_conn,
@@ -409,22 +402,20 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
         obj2 := m2.(*module.DeviceObject)
 
         obj1_ip := obj1.Status.Ip
-	log.Println("IP 1:" + obj1_ip)
         obj2_ip := obj2.Status.Ip
-	log.Println("IP 2:" + obj2_ip)
 
         //Keypair
         obj1_crt, obj1_key, err := GetDeviceCertificate(m[OverlayResource], obj1.Metadata.Name)
         if err != nil {
-            log.Println(err)
+	    return err
         }
         obj2_crt, obj2_key, err := GetDeviceCertificate(m[OverlayResource], obj2.Metadata.Name)
         if err != nil {
-            log.Println(err)
+	    return err
         }
 
         conn := resource.Connection{
-            Name: DEFAULT_CONN + strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
+            Name: DEFAULT_CONN + format_resource_name(obj1.Metadata.Name, obj2.Metadata.Name),
             ConnectionType: CONN_TYPE,
             Mode: MODE,
             Mark: DEFAULT_MARK,
@@ -432,29 +423,29 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
             CryptoProposal: all_proposals,
         }
         obj1_ipsec_resource = resource.IpsecResource{
-            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
+            Name: format_resource_name(obj1.Metadata.Name, obj2.Metadata.Name),
             Type: POLICY_MODE,
             Remote: obj2_ip,
             AuthenticationMethod: PUBKEY_AUTH,
             PublicCert: base64.StdEncoding.EncodeToString([]byte(obj1_crt)),
             PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj1_key)),
             SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
-            LocalIdentifier: "CN=device-"+obj1.Metadata.Name+"-cert",
-            RemoteIdentifier: "CN=device-"+obj2.Metadata.Name+"-cert",
+            LocalIdentifier: "CN="+obj1.GetCertName(),
+            RemoteIdentifier: "CN="+obj2.GetCertName(),
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: conn,
         }
         obj2_ipsec_resource = resource.IpsecResource{
-            Name: strings.ToLower(strings.Replace(obj1.Metadata.Name, "-", "", -1)) + strings.ToLower(strings.Replace(obj2.Metadata.Name, "-", "", -1)),
+            Name: format_resource_name(obj2.Metadata.Name, obj1.Metadata.Name),
             Type: POLICY_MODE,
             Remote: obj1_ip,
             AuthenticationMethod: PUBKEY_AUTH,
             PublicCert: base64.StdEncoding.EncodeToString([]byte(obj2_crt)),
             PrivateCert: base64.StdEncoding.EncodeToString([]byte(obj2_key)),
             SharedCA: base64.StdEncoding.EncodeToString([]byte(root_ca)),
-            LocalIdentifier: "CN=device-"+obj2.Metadata.Name+"-cert",
-            RemoteIdentifier: "CN=device-"+obj1.Metadata.Name+"-cert",
+            LocalIdentifier: "CN="+obj2.GetCertName(),
+            RemoteIdentifier: "CN="+obj1.GetCertName(),
             CryptoProposal: all_proposals,
             ForceCryptoProposal: FORCECRYPTOPROPOSAL,
             Connections: conn,
@@ -478,7 +469,6 @@ func (c *OverlayObjectManager) SetupConnection(m map[string]string, m1 module.Co
 
     cm := GetConnectionManager()
     err = cm.Deploy(m[OverlayResource], co)
-   
     if err != nil {
         return pkgerrors.Wrap(err, "Unable to create the object: fail to deploy resource")
     }

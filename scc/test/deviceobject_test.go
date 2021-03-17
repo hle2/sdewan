@@ -13,7 +13,6 @@ import (
 )
 
 var BaseUrl string
-var CertUrl string
 
 func TestMain(m *testing.M) {
     servIp := flag.String("ip", "127.0.0.1", "SDEWAN Central Controller IP Address")
@@ -22,11 +21,11 @@ func TestMain(m *testing.M) {
     ProposalUrl := OverlayUrl + "/overlay1/" + manager.ProposalCollection
     BaseUrl = OverlayUrl + "/overlay1/" + manager.DeviceCollection
     IprangeUrl := OverlayUrl + "/overlay1/" + manager.IPRangeCollection
-    CertUrl = OverlayUrl + "/overlay1/" + manager.CertCollection
+    flag := true
 
     kube_config_B, _ := ioutil.ReadFile("admin.conf")
     encoded_config_b := base64.StdEncoding.EncodeToString([]byte(kube_config_B))
-    
+
     var publicIpB []string
 
     var object1 = module.OverlayObject{
@@ -44,23 +43,22 @@ func TestMain(m *testing.M) {
     var iprange_object1 = module.IPRangeObject{
         Metadata: module.ObjectMetaData{"ipr1", "", "", ""}, 
         Specification: module.IPRangeObjectSpec{"192.168.0.2", 1, 15}}
-    var cert_object1 = module.CertificateObject{
-        Metadata: module.ObjectMetaData{"device-a", "", "", ""}}
 
+    if flag {
     createControllerObject(OverlayUrl, &object1, &module.OverlayObject{})
     createControllerObject(ProposalUrl, &objecta, &module.ProposalObject{})
     createControllerObject(ProposalUrl, &objectb, &module.ProposalObject{})
     createControllerObject(IprangeUrl, &iprange_object1, &module.IPRangeObject{})
-    createControllerObject(CertUrl, &cert_object1, &module.CertificateObject{})
     createControllerObject(BaseUrl, &device, &module.DeviceObject{})
-    
+    }
+
     var ret = m.Run()
 
     deleteControllerObject(BaseUrl, "device-a")
     deleteControllerObject(IprangeUrl, "ipr1")
     deleteControllerObject(ProposalUrl, "proposal2")
     deleteControllerObject(ProposalUrl, "proposal1")
-    deleteControllerObject(OverlayUrl, "overlay1")
+    //deleteControllerObject(OverlayUrl, "overlay1")
 
     os.Exit(ret)
 }
@@ -85,23 +83,6 @@ func TestGetObjects(t *testing.T) {
     p_data, _ := json.Marshal(objs)
     fmt.Printf("%s\n", string(p_data))
 
-    res, err = callRest("GET", CertUrl, "")
-    if err != nil {
-        printError(err)
-        t.Errorf("Test case GetObjects: can not get Objects")
-        return
-    }
-
-    var cobjs []module.CertificateObject
-    err = json.Unmarshal([]byte(res), &cobjs)
-
-    if len(cobjs) == 0 {
-        fmt.Printf("Test case GetObjects: no cert object found")
-        return
-    }
-
-    p_data, _ = json.Marshal(cobjs)
-    fmt.Printf("Cert: %s\n", string(p_data))
 }
 
 
@@ -161,49 +142,3 @@ func TestCreateObject(t *testing.T) {
     }
 }
 
-func TestCreateObjectPass(t *testing.T) {
-    var publicIp []string
-
-    kube_config_B, err := ioutil.ReadFile("admin1.conf")
-    if err != nil {
-            fmt.Println(err)
-    }
-    encoded_config_b := base64.StdEncoding.EncodeToString([]byte(kube_config_B))
-
-    tcases := []struct {
-        name string
-        obj module.DeviceObject
-        expectedErr bool
-        expectedErrCode int
-    }{
-        {
-            name: "Normal",
-            obj: module.DeviceObject{
-                Metadata: module.ObjectMetaData{"devicetest", "object 2", "", ""},
-                Specification: module.DeviceObjectSpec{publicIp, true, "", 65536, true, false, "devicetest", encoded_config_b}},
-        },
-    }
-
-    for _, tcase := range tcases {
-        _, err := createControllerObject(BaseUrl, &tcase.obj, &module.DeviceObject{})
-        handleError(t, err, tcase.name, tcase.expectedErr, tcase.expectedErrCode)
-    }
-
-    gcases := []struct {
-        name string
-        object_name string
-        expectedErr bool
-        expectedErrCode int
-    }{
-        {
-            name: "NormalGet",
-            object_name: "devicetest",
-        },
-    }
-
-    for _, gcase := range gcases {
-        _, err := getControllerObject(BaseUrl, gcase.object_name, &module.DeviceObject{})
-        handleError(t, err, gcase.name, gcase.expectedErr, gcase.expectedErrCode)
-    }
-}
-*/

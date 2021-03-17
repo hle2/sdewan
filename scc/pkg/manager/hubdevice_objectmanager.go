@@ -53,7 +53,7 @@ func (c *HubDeviceObjectManager) GetResourceName() string {
 }
 
 func (c *HubDeviceObjectManager) IsOperationSupported(oper string) bool {
-    if oper == "PUT" || oper == "DELETE" {
+    if oper == "POST" || oper == "DELETE" {
         return true
     }
     return false
@@ -87,8 +87,10 @@ func (c *HubDeviceObjectManager) CreateObject(m map[string]string, t module.Cont
 	// Setup hub-device connection
     overlay_name := m[OverlayResource]
     hub_name := m[HubResource]
+    //device_name :=m[DeviceResource]
     to := t.(*module.HubDeviceObject)
     device_name := to.Specification.Device
+    m[DeviceResource] = device_name
 
     hub_manager := GetManagerset().Hub
     dev_manager := GetManagerset().Device
@@ -103,6 +105,12 @@ func (c *HubDeviceObjectManager) CreateObject(m map[string]string, t module.Cont
     dev, err := dev_manager.GetObject(m)
     if err != nil {
         return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Device " + device_name + " is not defined")
+    }
+
+    device := dev.(*module.DeviceObject)
+    if device.Status.Data[RegStatus] != "success" {
+	log.Println("Device registration not ready")
+	return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Device " + device_name + " registration is not ready")
     }
 
     _, err = conn_manager.GetObject(overlay_name,
@@ -150,12 +158,6 @@ func (c *HubDeviceObjectManager) DeleteObject(m map[string]string) error {
     dev, err := dev_manager.GetObject(m)
     if err != nil {
         return pkgerrors.Wrap(err, "Device " + device_name + " is not defined")
-    }
-
-    // check if hub is ProxyHub of the device
-    dev_obj := dev.(*module.DeviceObject)
-    if dev_obj.IsProxyHub(hub_name) {
-        return pkgerrors.New("Cannot delete hub-device connection if hub is the ProxyHub of device")
     }
 
     conn, err := conn_manager.GetObject(overlay_name,

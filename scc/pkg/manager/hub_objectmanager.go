@@ -22,6 +22,7 @@ import (
     "strings"
     "encoding/json"
     "encoding/base64"
+    "time"
 
     "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"
@@ -121,27 +122,25 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
     }
 
     local_public_ips := to.Specification.PublicIps
-    log.Println("Hub public ips: %+v", local_public_ips)
 
     kubeutil := GetKubeConfigUtil()
     config, local_public_ip, err = kubeutil.checkKubeConfigAvail(config, local_public_ips, DEFAULTPORT)
     if err == nil {
         log.Println("Public IP address verified: " + local_public_ip)
         to.Status.Ip = local_public_ip
-	    to.Specification.KubeConfig = base64.StdEncoding.EncodeToString(config)
+        to.Specification.KubeConfig = base64.StdEncoding.EncodeToString(config)
         err := GetDBUtils().RegisterDevice(hub_name, to.Specification.KubeConfig)
         if err != nil {
             log.Println(err)
         }
     } else {
-        log.Println(err)
+        return t, err
     }
-    
+
     //Create cert for ipsec connection
-    log.Println("Create Certificate: " + hub_name + "-cert")
-    _, _, err = overlay.CreateCertificate(overlay_name, hub_name + "-cert")
+    log.Println("Create Certificate: " + to.GetCertName())
+    _, _, err = overlay.CreateCertificate(overlay_name, to.GetCertName())
     if err != nil {
-        log.Println(err)
         return t, err
     }
 
@@ -151,12 +150,14 @@ func (c *HubObjectManager) CreateObject(m map[string]string, t module.Controller
         log.Println(err)
     }
 
+    //TODO: Need to add funcs to re-create connections if some of the connections are not ready
+    //Maybe because of cert not ready or other reasons.
     if len(hubs) > 0 && err == nil {
         for i := 0; i < len(hubs); i++ {
             err := overlay.SetupConnection(m, t, hubs[i], HUBTOHUB, NameSpaceName)
             if err != nil {
                 log.Println("Setup connection with " + hubs[i].(*module.HubObject).Metadata.Name + " failed.")
-            }    
+            }
         }
         t, err = GetDBUtils().CreateObject(c, m, t)
     } else {
@@ -216,11 +217,17 @@ func (c *HubObjectManager) DeleteObject(m map[string]string) error {
         }
     }
 
-    log.Println("Delete Certificate: " + hub_name + "-cert")
-    overlay_manager.DeleteCertificate(hub_name + "-cert")
+    to := t.(*module.HubObject)
+    log.Println("Delete Certificate: " + to.GetCertName())
+    overlay_manager.DeleteCertificate(to.GetCertName())
+
 
     // DB Operation
     err = GetDBUtils().DeleteObject(c, m)
+
+    //DB Operation to remove cloud config
+    time.Sleep(5 * time.Second)
+    GetDBUtils().UnregisterDevice(hub_name)
     return err
 }
 

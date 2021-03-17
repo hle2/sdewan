@@ -17,7 +17,6 @@
 package manager
 
 import (
-    "log"
     "io"
     "encoding/json"
     "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
@@ -99,7 +98,7 @@ func (c *ProposalObjectManager) ParseObject(r io.Reader) (module.ControllerObjec
 
 func (c *ProposalObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
     // DB Operation
-    t, err = GetDBUtils().CreateObject(c, m, t)
+    t, err := GetDBUtils().CreateObject(c, m, t)
 
     return t, err
 }

@@ -109,10 +109,12 @@ func (c *CertificateObjectManager) ParseObject(r io.Reader) (module.ControllerOb
 }
 
 func (c *CertificateObjectManager) GetDeviceCertName(name string) string {
-    return "device-" + name + "-cert"
+    device := module.DeviceObject{
+            Metadata: module.ObjectMetaData{name, "", "", ""}}
+    return device.GetCertName()
 }
 
-func (c *CertificateObjectManager) GetRootCA(overlay_name string) string {
+func GetRootCA(overlay_name string) string {
     overlay := GetManagerset().Overlay
     cu, _ := GetCertUtil()
 
@@ -123,6 +125,15 @@ func (c *CertificateObjectManager) GetRootCA(overlay_name string) string {
 
     return root_ca
 }
+
+func GetRootBaseCA() string {
+    cu, _ := GetCertUtil()
+
+    root_ca := cu.GetSelfSignedCA()
+
+    return root_ca
+}
+
 
 func (c *CertificateObjectManager) CreateObject(m map[string]string, t module.ControllerObject) (module.ControllerObject, error) {
     // Create Certificate
@@ -142,7 +153,7 @@ func (c *CertificateObjectManager) CreateObject(m map[string]string, t module.Co
     // Fill Certificate data
     if err == nil {
         to := t.(*module.CertificateObject)
-        to.Data.RootCA = base64.StdEncoding.EncodeToString([]byte(c.GetRootCA(overlay_name)))
+        to.Data.RootCA = base64.StdEncoding.EncodeToString([]byte(GetRootCA(overlay_name)))
         to.Data.Ca = base64.StdEncoding.EncodeToString([]byte(ca))
         to.Data.Key = base64.StdEncoding.EncodeToString([]byte(key))
 
@@ -169,7 +180,7 @@ func (c *CertificateObjectManager) GetObject(m map[string]string) (module.Contro
         }
 
         to := t.(*module.CertificateObject)
-        to.Data.RootCA = base64.StdEncoding.EncodeToString([]byte(c.GetRootCA(overlay_name)))
+        to.Data.RootCA = base64.StdEncoding.EncodeToString([]byte(GetRootCA(overlay_name)))
         to.Data.Ca = base64.StdEncoding.EncodeToString([]byte(ca))
         to.Data.Key = base64.StdEncoding.EncodeToString([]byte(key))
 

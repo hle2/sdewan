@@ -95,7 +95,7 @@ func NewRouter(
 
     // hub API
     if hubObjectClient == nil {
-         hubObjectClient = manager.NewHubObjectManager()
+	 hubObjectClient = manager.NewHubObjectManager()
     }
     mgrset.Hub = hubObjectClient.(*manager.HubObjectManager)
     createHandlerMapping(hubObjectClient, olRouter, manager.HubCollection, manager.HubResource)
@@ -149,7 +149,6 @@ func NewRouter(
     overlayObjectClient.AddOwnResManager(ipRangeObjectClient)
     overlayObjectClient.AddOwnResManager(certificateObjectClient)
     hubObjectClient.AddOwnResManager(hubDeviceObjectClient)
-    deviceObjectClient.AddOwnResManager(hubDeviceObjectClient)
 
     proposalObjectClient.AddDepResManager(overlayObjectClient)
     hubObjectClient.AddDepResManager(overlayObjectClient)
@@ -157,7 +156,6 @@ func NewRouter(
     ipRangeObjectClient.AddDepResManager(overlayObjectClient)
     certificateObjectClient.AddDepResManager(overlayObjectClient)
     hubDeviceObjectClient.AddDepResManager(hubObjectClient)
-    hubDeviceObjectClient.AddDepResManager(deviceObjectClient)
     hubConnObjectClient.AddDepResManager(hubObjectClient)
     deviceConnObjectClient.AddDepResManager(deviceObjectClient)
 

@@ -60,10 +60,21 @@ func (d *DBUtils) CheckDep(c ControllerObjectManager, m map[string]string) error
     return nil
 }
 
-func (d *DBUtils) CreateObject(c ControllerObjectManager, 
-    m map[string]string, 
+func (d *DBUtils) CheckOwn(c ControllerObjectManager, m map[string]string) error {
+    depsOwnManagers := c.GetOwnResManagers()
+    for _, mgr := range depsOwnManagers {
+        objs, err := d.GetObjects(mgr, m)
+        if err == nil && len(objs) > 0 {
+            return pkgerrors.New("Sub-resource found : " + mgr.GetStoreMeta())
+        }
+    }
+    return nil
+}
+
+
+func (d *DBUtils) CreateObject(c ControllerObjectManager, m map[string]string,
     t module.ControllerObject) (module.ControllerObject, error) {
- 
+
     key, _ := c.GetStoreKey(m, t, false)
     err := db.DBconn.Insert(c.GetStoreName(), key, nil, c.GetStoreMeta(), t)
     if err != nil {
@@ -73,7 +84,7 @@ func (d *DBUtils) CreateObject(c ControllerObjectManager,
     return t, nil
 }
 
-func (d *DBUtils) GetObject(c ControllerObjectManager, 
+func (d *DBUtils) GetObject(c ControllerObjectManager,
     m map[string]string) (module.ControllerObject, error) {
 
     key, err := c.GetStoreKey(m, c.CreateEmptyObject(), false)
@@ -81,13 +92,13 @@ func (d *DBUtils) GetObject(c ControllerObjectManager,
         return c.CreateEmptyObject(), err
     }
 
-    
+
     value, err := db.DBconn.Find(c.GetStoreName(), key, c.GetStoreMeta())
     if err != nil {
         return c.CreateEmptyObject(), pkgerrors.Wrap(err, "Get Resource")
     }
 
-    
+
     if value != nil {
         r := c.CreateEmptyObject()
         err = db.DBconn.Unmarshal(value[0], r)
@@ -102,20 +113,20 @@ func (d *DBUtils) GetObject(c ControllerObjectManager,
 
 func (d *DBUtils) GetObjects(c ControllerObjectManager,
     m map[string]string) ([]module.ControllerObject, error) {
-    
-        
+
+
     key, err := c.GetStoreKey(m, c.CreateEmptyObject(), true)
     if err != nil {
         return []module.ControllerObject{}, err
     }
 
-    
+
     values, err := db.DBconn.Find(c.GetStoreName(), key, c.GetStoreMeta())
     if err != nil {
         return []module.ControllerObject{}, pkgerrors.Wrap(err, "Get Overlay Objects")
     }
 
-    
+
     var resp []module.ControllerObject
     for _, value := range values {
         t := c.CreateEmptyObject()
@@ -168,3 +179,15 @@ func (d *DBUtils) RegisterDevice(cluster_name string, kubeconfig string) error {
 
     return nil
 }
+
+func (d *DBUtils) UnregisterDevice(cluster_name string) error {
+    ccc := rsync.NewCloudConfigClient()
+
+    err := ccc.DeleteCloudConfig(PROVIDERNAME, cluster_name, "0", "sdewan-system")
+    if err != nil {
+        return pkgerrors.Wrap(err, "Error deleting cloud config")
+    }
+
+    return nil
+}
+

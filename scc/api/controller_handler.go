@@ -205,6 +205,14 @@ func (h ControllerHandler) deleteHandler(w http.ResponseWriter, r *http.Request)
         return
     }
 
+    // Check whether sub-resource available
+    err = manager.GetDBUtils().CheckOwn(h.client, vars)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+
     err = h.client.DeleteObject(vars)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
