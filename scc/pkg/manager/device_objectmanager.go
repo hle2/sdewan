@@ -325,9 +325,6 @@ func (c *DeviceObjectManager) DeleteObject(m map[string]string) error {
     // DB Operation
     err = GetDBUtils().DeleteObject(c, m)
 
-    //DB Operation to remove cloud config
-    time.Sleep(10 * time.Second)
-    GetDBUtils().UnregisterDevice(device_name)
     return err
 }
 

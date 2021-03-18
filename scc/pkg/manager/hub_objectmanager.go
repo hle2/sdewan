@@ -225,9 +225,6 @@ func (c *HubObjectManager) DeleteObject(m map[string]string) error {
     // DB Operation
     err = GetDBUtils().DeleteObject(c, m)
 
-    //DB Operation to remove cloud config
-    time.Sleep(5 * time.Second)
-    GetDBUtils().UnregisterDevice(hub_name)
     return err
 }
 
