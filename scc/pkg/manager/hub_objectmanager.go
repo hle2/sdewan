@@ -22,7 +22,6 @@ import (
     "strings"
     "encoding/json"
     "encoding/base64"
-    "time"
 
     "github.com/open-ness/EMCO/src/orchestrator/pkg/infra/db"
     "github.com/akraino-edge-stack/icn-sdwan/central-controller/src/scc/pkg/module"

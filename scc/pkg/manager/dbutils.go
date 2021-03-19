@@ -173,7 +173,7 @@ func (d *DBUtils) RegisterDevice(cluster_name string, kubeconfig string) error {
     ccc := rsync.NewCloudConfigClient()
 
     config, _ := ccc.GetCloudConfig(PROVIDERNAME, cluster_name, "0", "sdewan-system")
-    if config != nil {
+    if config.Config != "" {
         ccc.DeleteCloudConfig(PROVIDERNAME, cluster_name, "0", "sdewan-system")
     }
 
